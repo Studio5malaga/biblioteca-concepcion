@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Biblioteca La Concepción - Gestor</title>
     
-    <!-- Firebase SDKs (versión compat) -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- EmailJS para enviar emails -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    
+    <!-- Google Drive API para backups -->
     <script src="https://apis.google.com/js/api.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
         /* ============================================
@@ -41,7 +46,7 @@
         }
 
         /* ============================================================
-                   PANTALLA DE LOGIN (FIREBASE)
+                   PANTALLA DE LOGIN
                    ============================================================ */
         .login-overlay {
             position: fixed;
@@ -78,22 +83,9 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .login-box .logo {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
-
-        .login-box h2 {
-            color: #2d5016;
-            font-size: 1.5rem;
-            margin-bottom: 6px;
-        }
-
-        .login-box .subtitle {
-            color: #718096;
-            font-size: 0.9rem;
-            margin-bottom: 25px;
-        }
+        .login-box .logo { font-size: 3rem; margin-bottom: 10px; }
+        .login-box h2 { color: #2d5016; font-size: 1.5rem; margin-bottom: 6px; }
+        .login-box .subtitle { color: #718096; font-size: 0.9rem; margin-bottom: 25px; }
 
         .login-box .error-msg {
             color: #e53e3e;
@@ -104,10 +96,7 @@
             margin-bottom: 15px;
             display: none;
         }
-
-        .login-box .error-msg.visible {
-            display: block;
-        }
+        .login-box .error-msg.visible { display: block; }
 
         .login-box .success-msg {
             color: #38a169;
@@ -118,16 +107,9 @@
             margin-bottom: 15px;
             display: none;
         }
+        .login-box .success-msg.visible { display: block; }
 
-        .login-box .success-msg.visible {
-            display: block;
-        }
-
-        .login-box .form-group {
-            margin-bottom: 18px;
-            text-align: left;
-        }
-
+        .login-box .form-group { margin-bottom: 18px; text-align: left; }
         .login-box .form-group label {
             display: block;
             font-weight: 600;
@@ -135,7 +117,6 @@
             color: #4a5568;
             margin-bottom: 5px;
         }
-
         .login-box .form-group input {
             width: 100%;
             padding: 12px 16px;
@@ -144,7 +125,6 @@
             font-size: 1rem;
             transition: border-color 0.3s ease;
         }
-
         .login-box .form-group input:focus {
             outline: none;
             border-color: #4a7c2a;
@@ -163,18 +143,12 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
         .login-box .btn-login:hover {
             background: #4a7c2a;
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(45, 80, 22, 0.3);
         }
-
-        .login-box .btn-login:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .login-box .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .login-box .btn-google {
             width: 100%;
@@ -193,18 +167,12 @@
             justify-content: center;
             gap: 10px;
         }
-
         .login-box .btn-google:hover {
             background: #f7fafc;
             border-color: #2d5016;
             transform: translateY(-2px);
         }
-
-        .login-box .btn-google:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .login-box .btn-google:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .login-box .divider {
             display: flex;
@@ -213,14 +181,12 @@
             color: #a0aec0;
             font-size: 0.85rem;
         }
-
         .login-box .divider::before,
         .login-box .divider::after {
             content: '';
             flex: 1;
             border-bottom: 1px solid #e2e8f0;
         }
-
         .login-box .divider::before { margin-right: 12px; }
         .login-box .divider::after { margin-left: 12px; }
 
@@ -232,16 +198,10 @@
             font-size: 0.8rem;
             color: #3182ce;
             cursor: pointer;
-            transition: color 0.3s ease;
             background: none;
             border: none;
-            text-decoration: none;
         }
-
-        .login-box .forgot-password:hover {
-            color: #2b6cb0;
-            text-decoration: underline;
-        }
+        .login-box .forgot-password:hover { text-decoration: underline; }
 
         .login-box .footer-text {
             margin-top: 16px;
@@ -249,22 +209,16 @@
             color: #4a5568;
             line-height: 1.5;
         }
-
         .login-box .footer-text .contact-link {
             color: #3182ce;
             text-decoration: none;
             font-weight: 600;
             cursor: pointer;
-            transition: color 0.3s ease;
         }
-
-        .login-box .footer-text .contact-link:hover {
-            color: #2b6cb0;
-            text-decoration: underline;
-        }
+        .login-box .footer-text .contact-link:hover { text-decoration: underline; }
 
         /* ============================================================
-                   RESTO DE ESTILOS (Mismos que antes)
+                   CABECERA
                    ============================================================ */
         .header {
             background: #2d5016;
@@ -303,10 +257,7 @@
             background: linear-gradient(135deg, #2d5016, #4a7c2a);
             letter-spacing: 2px;
         }
-
-        .header-banner img.error + .fallback-text {
-            display: block;
-        }
+        .header-banner img.error + .fallback-text { display: block; }
 
         .header-toolbar {
             background: rgba(255,255,255,0.08);
@@ -335,13 +286,11 @@
             font-size: 1rem;
             font-weight: 600;
         }
-
         .header-toolbar .title span {
             font-weight: 300;
             font-size: 0.7rem;
             opacity: 0.7;
         }
-
         .header-toolbar .title .user-email {
             font-weight: 400;
             font-size: 0.7rem;
@@ -389,7 +338,6 @@
             background: #68d391;
             animation: pulse 2s infinite;
         }
-
         .backup-indicator .estado.error {
             background: #fc8181;
             animation: none;
@@ -416,42 +364,20 @@
             white-space: nowrap;
         }
 
-        .btn-primary {
-            background: #ffffff;
-            color: #2d5016;
-        }
-        .btn-primary:hover {
-            background: #e8f5e0;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+        .btn-primary { background: #ffffff; color: #2d5016; }
+        .btn-primary:hover { background: #e8f5e0; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
-        .btn-success {
-            background: #38a169;
-            color: white;
-        }
-        .btn-success:hover {
-            background: #2f855a;
-            transform: translateY(-2px);
-        }
+        .btn-success { background: #38a169; color: white; }
+        .btn-success:hover { background: #2f855a; transform: translateY(-2px); }
 
-        .btn-danger {
-            background: #e53e3e;
-            color: white;
-        }
-        .btn-danger:hover {
-            background: #c53030;
-            transform: translateY(-2px);
-        }
+        .btn-danger { background: #e53e3e; color: white; }
+        .btn-danger:hover { background: #c53030; transform: translateY(-2px); }
 
-        .btn-warning {
-            background: #ed8936;
-            color: white;
-        }
-        .btn-warning:hover {
-            background: #dd6b20;
-            transform: translateY(-2px);
-        }
+        .btn-warning { background: #ed8936; color: white; }
+        .btn-warning:hover { background: #dd6b20; transform: translateY(-2px); }
+
+        .btn-info { background: #3182ce; color: white; }
+        .btn-info:hover { background: #2b6cb0; transform: translateY(-2px); }
 
         .btn-outline {
             background: transparent;
@@ -472,6 +398,376 @@
         .btn-backup:hover {
             background: #ed8936;
             transform: translateY(-2px);
+        }
+
+        .btn-sm { padding: 3px 8px; font-size: 0.65rem; }
+        .btn-xs { padding: 2px 6px; font-size: 0.6rem; }
+
+        /* ============================================================
+                   PESTAÑAS DE NAVEGACIÓN
+                   ============================================================ */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: white;
+            padding: 6px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+            color: #4a5568;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .tab-btn:hover { background: #f0f4f8; }
+
+        .tab-btn.active {
+            background: #2d5016;
+            color: white;
+            box-shadow: 0 2px 10px rgba(45, 80, 22, 0.3);
+        }
+
+        .tab-btn .badge-tab {
+            background: #e53e3e;
+            color: white;
+            border-radius: 50%;
+            padding: 1px 7px;
+            font-size: 0.65rem;
+            margin-left: 4px;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ============================================================
+                   BÚSQUEDA
+                   ============================================================ */
+        .search-section {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-section input,
+        .search-section select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            flex: 1;
+            min-width: 140px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-section input:focus,
+        .search-section select:focus {
+            outline: none;
+            border-color: #4a7c2a;
+            box-shadow: 0 0 0 3px rgba(74, 124, 42, 0.1);
+        }
+
+        .search-section .filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 2;
+        }
+        .search-section .filters select { flex: 1; min-width: 100px; }
+
+        /* ============================================================
+                   ESTADÍSTICAS
+                   ============================================================ */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 10px 14px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            text-align: center;
+        }
+
+        .stat-card .number { font-size: 1.5rem; font-weight: 700; color: #2d5016; }
+        .stat-card .label { font-size: 0.7rem; color: #718096; margin-top: 2px; }
+
+        /* ============================================================
+                   TABLA
+                   ============================================================ */
+        .table-container {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        thead {
+            background: #f7fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        th {
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: #f7fafc;
+            z-index: 10;
+        }
+
+        td { padding: 6px 10px; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
+        tr:hover { background: #f7fafc; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+
+        .badge-es { background: #e8f5e0; color: #2d5016; }
+        .badge-en { background: #e0f2fe; color: #0369a1; }
+        .badge-fr { background: #fce4ec; color: #c62828; }
+        .badge-it { background: #fef3c7; color: #92400e; }
+        .badge-ca { background: #fce4ec; color: #7b1fa2; }
+        .badge-pt { background: #e0f7fa; color: #00695c; }
+
+        .badge-procedencia {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        .badge-procedencia.canizo { background: #dbeafe; color: #1e40af; }
+        .badge-procedencia.patronato { background: #d1fae5; color: #065f46; }
+        .badge-procedencia.amigos { background: #fce7f3; color: #9d174d; }
+
+        .badge-estado {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+        .badge-estado.activo { background: #dbeafe; color: #1e40af; }
+        .badge-estado.devuelto { background: #d1fae5; color: #065f46; }
+        .badge-estado.retrasado { background: #fee2e2; color: #991b1b; animation: pulseAlert 1.5s infinite; }
+
+        @keyframes pulseAlert {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .btn-accion {
+            padding: 2px 6px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            margin: 0 2px;
+            transition: all 0.2s;
+        }
+        .btn-accion.editar { background: #dbeafe; color: #1e40af; }
+        .btn-accion.editar:hover { background: #bfdbfe; }
+        .btn-accion.eliminar { background: #fee2e2; color: #991b1b; }
+        .btn-accion.eliminar:hover { background: #fecaca; }
+        .btn-accion.devolver { background: #d1fae5; color: #065f46; }
+        .btn-accion.devolver:hover { background: #a7f3d0; }
+        .btn-accion.email { background: #e0f2fe; color: #0369a1; }
+        .btn-accion.email:hover { background: #bae6fd; }
+        .btn-accion.prestar { background: #fef3c7; color: #92400e; }
+        .btn-accion.prestar:hover { background: #fde68a; }
+
+        /* ============================================================
+                   MODAL
+                   ============================================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 18px;
+            max-width: 750px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-content h2 {
+            margin-bottom: 14px;
+            color: #2d5016;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-content .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #a0aec0;
+            transition: color 0.2s;
+        }
+        .modal-content .close:hover { color: #e53e3e; }
+
+        .form-group { margin-bottom: 10px; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.78rem;
+            color: #4a5568;
+            margin-bottom: 2px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 7px 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a7c2a;
+            box-shadow: 0 0 0 3px rgba(74, 124, 42, 0.1);
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 2px solid #edf2f7;
+        }
+
+        /* ============================================================
+                   PAGINACIÓN
+                   ============================================================ */
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pagination-bar .info { color: #718096; font-size: 0.78rem; }
+        .pagination-bar .controles { display: flex; gap: 3px; flex-wrap: wrap; }
+        .pagination-bar .controles .btn {
+            min-width: 28px;
+            justify-content: center;
+            padding: 3px 8px;
+            font-size: 0.7rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 35px 20px;
+            color: #a0aec0;
+        }
+        .empty-state .icon { font-size: 2.8rem; margin-bottom: 8px; }
+
+        /* ============================================================
+                   TOAST Y FOOTER
+                   ============================================================ */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .toast {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease;
+            max-width: 340px;
+            font-size: 0.8rem;
+        }
+        .toast-success { background: #38a169; }
+        .toast-error { background: #e53e3e; }
+        .toast-info { background: #3182ce; }
+        .toast-warning { background: #ed8936; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         .footer {
@@ -512,7 +808,6 @@
             font-weight: 700;
             color: #2d5016;
         }
-
         .footer .credits .studio-logo img {
             height: 28px;
             width: auto;
@@ -520,16 +815,9 @@
             vertical-align: middle;
             border-radius: 4px;
         }
+        .footer .credits .studio-logo .text { font-weight: 700; color: #2d5016; }
 
-        .footer .credits .studio-logo .text {
-            font-weight: 700;
-            color: #2d5016;
-        }
-
-        .footer .credits .separator {
-            color: #cbd5e0;
-            font-weight: 300;
-        }
+        .footer .credits .separator { color: #cbd5e0; font-weight: 300; }
 
         .footer .credits .contact-link {
             color: #3182ce;
@@ -541,347 +829,14 @@
             align-items: center;
             gap: 4px;
         }
+        .footer .credits .contact-link:hover { color: #2b6cb0; text-decoration: underline; }
+        .footer .credits .contact-link svg { width: 16px; height: 16px; fill: currentColor; }
 
-        .footer .credits .contact-link:hover {
-            color: #2b6cb0;
-            text-decoration: underline;
-        }
+        .footer .version { margin-top: 6px; font-size: 0.7rem; color: #a0aec0; }
 
-        .footer .credits .contact-link svg {
-            width: 16px;
-            height: 16px;
-            fill: currentColor;
-        }
-
-        .footer .version {
-            margin-top: 6px;
-            font-size: 0.7rem;
-            color: #a0aec0;
-        }
-
-        .search-section {
-            background: white;
-            padding: 16px 20px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-section input,
-        .search-section select {
-            padding: 8px 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            flex: 1;
-            min-width: 140px;
-            transition: border-color 0.3s ease;
-        }
-
-        .search-section input:focus,
-        .search-section select:focus {
-            outline: none;
-            border-color: #4a7c2a;
-            box-shadow: 0 0 0 3px rgba(74, 124, 42, 0.1);
-        }
-
-        .search-section .filters {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            flex: 2;
-        }
-
-        .search-section .filters select {
-            flex: 1;
-            min-width: 100px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 10px 14px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            text-align: center;
-        }
-
-        .stat-card .number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #2d5016;
-        }
-
-        .stat-card .label {
-            font-size: 0.7rem;
-            color: #718096;
-            margin-top: 2px;
-        }
-
-        .table-container {
-            background: white;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.8rem;
-        }
-
-        thead {
-            background: #f7fafc;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        th {
-            padding: 8px 10px;
-            text-align: left;
-            font-weight: 600;
-            color: #4a5568;
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            background: #f7fafc;
-            z-index: 10;
-        }
-
-        td {
-            padding: 6px 10px;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
-
-        tr:hover {
-            background: #f7fafc;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
-        }
-
-        .badge-es { background: #e8f5e0; color: #2d5016; }
-        .badge-en { background: #e0f2fe; color: #0369a1; }
-        .badge-fr { background: #fce4ec; color: #c62828; }
-        .badge-it { background: #fef3c7; color: #92400e; }
-        .badge-ca { background: #fce4ec; color: #7b1fa2; }
-        .badge-pt { background: #e0f7fa; color: #00695c; }
-
-        .badge-procedencia {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 600;
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .badge-procedencia.canizo { background: #dbeafe; color: #1e40af; }
-        .badge-procedencia.patronato { background: #d1fae5; color: #065f46; }
-        .badge-procedencia.amalia { background: #fce7f3; color: #9d174d; }
-
-        .btn-accion {
-            padding: 2px 6px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.6rem;
-            margin: 0 2px;
-            transition: all 0.2s;
-        }
-        .btn-accion.editar { background: #dbeafe; color: #1e40af; }
-        .btn-accion.editar:hover { background: #bfdbfe; }
-        .btn-accion.eliminar { background: #fee2e2; color: #991b1b; }
-        .btn-accion.eliminar:hover { background: #fecaca; }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 20px 24px;
-            border-radius: 18px;
-            max-width: 700px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .modal-content h2 {
-            margin-bottom: 14px;
-            color: #2d5016;
-            font-size: 1.2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-content .close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #a0aec0;
-            transition: color 0.2s;
-        }
-        .modal-content .close:hover { color: #e53e3e; }
-
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.78rem;
-            color: #4a5568;
-            margin-bottom: 2px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 7px 10px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            transition: border-color 0.3s;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #4a7c2a;
-            box-shadow: 0 0 0 3px rgba(74, 124, 42, 0.1);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 14px;
-            padding-top: 10px;
-            border-top: 2px solid #edf2f7;
-        }
-
-        .pagination-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .pagination-bar .info {
-            color: #718096;
-            font-size: 0.78rem;
-        }
-
-        .pagination-bar .controles {
-            display: flex;
-            gap: 3px;
-            flex-wrap: wrap;
-        }
-
-        .pagination-bar .controles .btn {
-            min-width: 28px;
-            justify-content: center;
-            padding: 3px 8px;
-            font-size: 0.7rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 35px 20px;
-            color: #a0aec0;
-        }
-
-        .empty-state .icon {
-            font-size: 2.8rem;
-            margin-bottom: 8px;
-        }
-
-        .toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .toast {
-            padding: 8px 16px;
-            border-radius: 12px;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            animation: slideIn 0.3s ease;
-            max-width: 340px;
-            font-size: 0.8rem;
-        }
-
-        .toast-success { background: #38a169; }
-        .toast-error { background: #e53e3e; }
-        .toast-info { background: #3182ce; }
-
-        @keyframes slideIn {
-            from { transform: translateX(100px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
+        /* ============================================================
+                   RESPONSIVE
+                   ============================================================ */
         @media (max-width: 768px) {
             body { padding: 10px; }
             .login-box { padding: 30px 24px; margin: 20px; }
@@ -902,6 +857,8 @@
             .footer .credits { flex-direction: column; gap: 6px; }
             .footer .credits .separator { display: none; }
             .header-toolbar .title .user-email { display: none; }
+            .tabs { flex-direction: column; }
+            .tab-btn { min-width: unset; padding: 8px 12px; font-size: 0.75rem; }
         }
 
         @media (max-width: 480px) {
@@ -918,7 +875,7 @@
 <body>
 
 <!-- ============================================================
-PANTALLA DE LOGIN (FIREBASE)
+PANTALLA DE LOGIN
 ============================================================ -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
@@ -928,7 +885,6 @@ PANTALLA DE LOGIN (FIREBASE)
         <div class="error-msg" id="loginError">❌ Error al iniciar sesión. Inténtalo de nuevo.</div>
         <div class="success-msg" id="loginSuccess">📧 Te hemos enviado un email para restablecer tu contraseña.</div>
         
-        <!-- Login con Email/Contraseña -->
         <form id="loginForm" onsubmit="loginWithEmail(event)">
             <div class="form-group">
                 <label for="emailInput">📧 Email</label>
@@ -938,17 +894,14 @@ PANTALLA DE LOGIN (FIREBASE)
                 <label for="passwordInput">🔐 Contraseña</label>
                 <input type="password" id="passwordInput" placeholder="Introduce tu contraseña..." required>
             </div>
-            <!-- Botón de "¿Olvidaste tu contraseña?" -->
             <button type="button" class="forgot-password" onclick="resetPassword()">
                 ¿Olvidaste tu contraseña?
             </button>
             <button type="submit" class="btn-login" id="btnLogin">📚 Iniciar sesión</button>
         </form>
 
-        <!-- Divider -->
         <div class="divider">o</div>
 
-        <!-- Login con Google -->
         <button class="btn-google" onclick="loginWithGoogle()" id="btnGoogle">
             <svg width="20" height="20" viewBox="0 0 48 48">
                 <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
@@ -967,10 +920,10 @@ PANTALLA DE LOGIN (FIREBASE)
 </div>
 
 <!-- ============================================================
-CONTENIDO PRINCIPAL (protegido)
+CONTENIDO PRINCIPAL
 ============================================================ -->
 <div class="container" id="mainContent" style="display:none;">
-    <!-- ===== CABECERA ===== -->
+    <!-- CABECERA -->
     <header class="header">
         <div class="header-banner">
             <img src="cabecera2.png" alt="Biblioteca José Antonio del Cañizo - Escuela" 
@@ -999,75 +952,167 @@ CONTENIDO PRINCIPAL (protegido)
                 <button class="btn btn-backup" onclick="backupManual()">💾 Copia ahora</button>
                 <button class="btn btn-outline" onclick="exportarExcel()">📊 Excel</button>
                 <button class="btn btn-outline" onclick="importarDesdeExcel()">📥 Importar</button>
-                <button class="btn btn-primary" onclick="abrirModal()">➕ Nuevo</button>
             </div>
         </div>
     </header>
 
-    <!-- ===== ESTADÍSTICAS ===== -->
-    <div class="stats" id="statsContainer">
-        <div class="stat-card">
-            <div class="number" id="totalLibros">0</div>
-            <div class="label">📚 Total Libros</div>
-        </div>
-        <div class="stat-card">
-            <div class="number" id="totalIdiomas">0</div>
-            <div class="label">🌐 Idiomas</div>
-        </div>
-        <div class="stat-card">
-            <div class="number" id="totalProcedencias">0</div>
-            <div class="label">📦 Procedencias</div>
-        </div>
-        <div class="stat-card">
-            <div class="number" id="totalMaterias">0</div>
-            <div class="label">📂 Materias CDU</div>
-        </div>
-    </div>
-
-    <!-- ===== BÚSQUEDA ===== -->
-    <section class="search-section">
-        <input type="text" id="searchInput" placeholder="🔍 Buscar por título, editorial, autor..." oninput="renderizarTabla()">
-        <div class="filters">
-            <select id="filtroIdioma" onchange="renderizarTabla()">
-                <option value="">Todos los idiomas</option>
-            </select>
-            <select id="filtroProcedencia" onchange="renderizarTabla()">
-                <option value="">Todas las procedencias</option>
-            </select>
-            <select id="filtroMateria" onchange="renderizarTabla()">
-                <option value="">Todas las materias</option>
-            </select>
-        </div>
-        <button class="btn btn-warning" onclick="limpiarFiltros()">🔄 Limpiar</button>
-    </section>
-
-    <!-- ===== TABLA ===== -->
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Nº</th>
-                    <th>Título</th>
-                    <th>Editorial</th>
-                    <th>Año</th>
-                    <th>Idioma</th>
-                    <th>Materia CDU</th>
-                    <th>Procedencia</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tablaBody"></tbody>
-        </table>
-    </div>
-
-    <!-- ===== PAGINACIÓN ===== -->
-    <div class="pagination-bar">
-        <span class="info" id="infoPaginacion"></span>
-        <div class="controles" id="paginacionControles"></div>
+    <!-- ============================================================
+    PESTAÑAS DE NAVEGACIÓN
+    ============================================================ -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="cambiarPestana('libros')">
+            📚 Libros
+        </button>
+        <button class="tab-btn" onclick="cambiarPestana('prestamos')" id="tabPrestamos">
+            📋 Préstamos <span class="badge-tab" id="prestamosBadge" style="display:none;">0</span>
+        </button>
+        <button class="tab-btn" onclick="cambiarPestana('alertas')" id="tabAlertas">
+            🔔 Alertas <span class="badge-tab" id="alertasBadge" style="display:none;">0</span>
+        </button>
     </div>
 
     <!-- ============================================================
-    PIE DE PÁGINA - CRÉDITOS
+    PESTAÑA: LIBROS
+    ============================================================ -->
+    <div class="tab-content active" id="tabLibros">
+        <!-- Estadísticas -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalLibros">0</div>
+                <div class="label">📚 Total Libros</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalIdiomas">0</div>
+                <div class="label">🌐 Idiomas</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalProcedencias">0</div>
+                <div class="label">📦 Procedencias</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalMaterias">0</div>
+                <div class="label">📂 Materias CDU</div>
+            </div>
+        </div>
+
+        <!-- Búsqueda -->
+        <section class="search-section">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar por título, autor, editorial..." oninput="renderizarTabla()">
+            <div class="filters">
+                <select id="filtroIdioma" onchange="renderizarTabla()">
+                    <option value="">Todos los idiomas</option>
+                </select>
+                <select id="filtroProcedencia" onchange="renderizarTabla()">
+                    <option value="">Todas las procedencias</option>
+                </select>
+                <select id="filtroMateria" onchange="renderizarTabla()">
+                    <option value="">Todas las materias</option>
+                </select>
+            </div>
+            <button class="btn btn-warning" onclick="limpiarFiltros()">🔄 Limpiar</button>
+            <button class="btn btn-success" onclick="abrirModal()">➕ Nuevo Libro</button>
+        </section>
+
+        <!-- Tabla de libros -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nº Inventario</th>
+                        <th>Número</th>
+                        <th>Título</th>
+                        <th>Autor</th>
+                        <th>Editorial</th>
+                        <th>Año</th>
+                        <th>Idioma</th>
+                        <th>Procedencia</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBody"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination-bar">
+            <span class="info" id="infoPaginacion"></span>
+            <div class="controles" id="paginacionControles"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    PESTAÑA: PRÉSTAMOS
+    ============================================================ -->
+    <div class="tab-content" id="tabPrestamos">
+        <!-- Estadísticas de préstamos -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalPrestamos">0</div>
+                <div class="label">📋 Total Préstamos</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="prestamosActivos">0</div>
+                <div class="label">🟢 Activos</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="prestamosRetrasados">0</div>
+                <div class="label">🔴 Retrasados</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="prestamosDevueltos">0</div>
+                <div class="label">✅ Devueltos</div>
+            </div>
+        </div>
+
+        <!-- Búsqueda de préstamos -->
+        <section class="search-section">
+            <input type="text" id="searchPrestamos" placeholder="🔍 Buscar por socio, libro o email..." oninput="renderizarPrestamos()">
+            <div class="filters">
+                <select id="filtroEstadoPrestamo" onchange="renderizarPrestamos()">
+                    <option value="">Todos los estados</option>
+                    <option value="activo">🟢 Activos</option>
+                    <option value="retrasado">🔴 Retrasados</option>
+                    <option value="devuelto">✅ Devueltos</option>
+                </select>
+            </div>
+            <button class="btn btn-success" onclick="abrirModalPrestamo()">➕ Nuevo Préstamo</button>
+            <button class="btn btn-warning" onclick="limpiarFiltrosPrestamos()">🔄 Limpiar</button>
+        </section>
+
+        <!-- Tabla de préstamos -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Libro</th>
+                        <th>Socio</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Fecha Préstamo</th>
+                        <th>Fecha Devolución</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaPrestamos"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination-bar">
+            <span class="info" id="infoPaginacionPrestamos"></span>
+            <div class="controles" id="paginacionControlesPrestamos"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    PESTAÑA: ALERTAS
+    ============================================================ -->
+    <div class="tab-content" id="tabAlertas">
+        <div id="alertasContainer"></div>
+    </div>
+
+    <!-- ============================================================
+    PIE DE PÁGINA
     ============================================================ -->
     <footer class="footer">
         <div class="credits">
@@ -1091,7 +1136,7 @@ CONTENIDO PRINCIPAL (protegido)
 </div>
 
 <!-- ============================================================
-MODAL FORMULARIO
+MODAL: NUEVO LIBRO
 ============================================================ -->
 <div class="modal" id="modalForm">
     <div class="modal-content">
@@ -1101,29 +1146,45 @@ MODAL FORMULARIO
         </h2>
         <form id="libroForm" onsubmit="guardarLibro(event)">
             <input type="hidden" id="editId" value="">
+            
             <div class="form-row">
                 <div class="form-group">
                     <label>Nº de inventario *</label>
                     <input type="number" id="nInventario" required placeholder="Ej: 892">
                 </div>
                 <div class="form-group">
+                    <label>Número</label>
+                    <input type="text" id="numero" placeholder="Ej: 001, A-23, etc.">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Título *</label>
+                    <input type="text" id="titulo" required placeholder="Título completo del libro">
+                </div>
+                <div class="form-group">
+                    <label>Autor</label>
+                    <input type="text" id="autor" placeholder="Nombre del autor o autores">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Editorial</label>
+                    <input type="text" id="editorial" placeholder="Nombre de la editorial">
+                </div>
+                <div class="form-group">
+                    <label>Ciudad</label>
+                    <input type="text" id="ciudad" placeholder="Ciudad de publicación">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
                     <label>Año de publicación</label>
                     <input type="number" id="anio" placeholder="Ej: 1999">
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Título *</label>
-                <input type="text" id="titulo" required placeholder="Título completo del libro">
-            </div>
-            <div class="form-group">
-                <label>Editorial</label>
-                <input type="text" id="editorial" placeholder="Nombre de la editorial">
-            </div>
-            <div class="form-group">
-                <label>Ciudad</label>
-                <input type="text" id="ciudad" placeholder="Ciudad de publicación">
-            </div>
-            <div class="form-row">
                 <div class="form-group">
                     <label>Idioma *</label>
                     <select id="idioma" required>
@@ -1136,32 +1197,40 @@ MODAL FORMULARIO
                         <option value="Otro">Otro</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="form-row">
                 <div class="form-group">
                     <label>Procedencia</label>
                     <select id="procedencia">
                         <option value="Legado José Antonio del Cañizo">Legado José Antonio del Cañizo</option>
                         <option value="Patronato Botánico">Patronato Botánico</option>
-                        <option value="Herederos de Jorge y Amalia">Herederos de Jorge y Amalia</option>
+                        <option value="Colección Asociación Amigos del Jardín Botánico">Colección Asociación Amigos del Jardín Botánico</option>
                         <option value="Varios/Sin ordenar">Varios/Sin ordenar</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Sección</label>
+                    <select id="seccion">
+                        <option value="Sección Adultos">Sección Adultos</option>
+                        <option value="Sección Infantil">Sección Infantil</option>
+                        <option value="Fondo Local y Varios">Fondo Local y Varios</option>
+                        <option value="Arreglos Florales">Arreglos Florales</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Materia CDU</label>
-                <input type="text" id="materia" placeholder="Ej: 71 - Jardinería/Paisaje">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Materia CDU</label>
+                    <input type="text" id="materia" placeholder="Ej: 71 - Jardinería/Paisaje">
+                </div>
+                <div class="form-group">
+                    <label>Ubicación (código de estantería)</label>
+                    <input type="text" id="ubicacion" placeholder="Ej: DIR13, BOT23, EN 21">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Ubicación (código de estantería)</label>
-                <input type="text" id="ubicacion" placeholder="Ej: DIR13, BOT23, EN 21">
-            </div>
-            <div class="form-group">
-                <label>Sección</label>
-                <select id="seccion">
-                    <option value="Sección Adultos">Sección Adultos</option>
-                    <option value="Sección Infantil">Sección Infantil</option>
-                    <option value="Fondo Local y Varios">Fondo Local y Varios</option>
-                </select>
-            </div>
+
             <div class="form-actions">
                 <button type="button" class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
                 <button type="submit" class="btn btn-success" id="btnGuardar">💾 Guardar Libro</button>
@@ -1171,13 +1240,67 @@ MODAL FORMULARIO
 </div>
 
 <!-- ============================================================
-TOAST NOTIFICACIONES
+MODAL: NUEVO PRÉSTAMO
+============================================================ -->
+<div class="modal" id="modalPrestamo">
+    <div class="modal-content">
+        <h2>
+            <span id="modalPrestamoTitulo">📋 Nuevo Préstamo</span>
+            <button class="close" onclick="cerrarModalPrestamo()">&times;</button>
+        </h2>
+        <form id="prestamoForm" onsubmit="guardarPrestamo(event)">
+            <input type="hidden" id="editPrestamoId" value="">
+            
+            <div class="form-group">
+                <label>Libro *</label>
+                <select id="prestamoLibro" required>
+                    <option value="">Selecciona un libro...</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre del socio *</label>
+                    <input type="text" id="prestamoSocio" required placeholder="Nombre completo">
+                </div>
+                <div class="form-group">
+                    <label>Email del socio *</label>
+                    <input type="email" id="prestamoEmail" required placeholder="email@socio.com">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Teléfono / WhatsApp</label>
+                    <input type="text" id="prestamoTelefono" placeholder="+34 600 000 000">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de préstamo *</label>
+                    <input type="date" id="prestamoFecha" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Observaciones</label>
+                <textarea id="prestamoObservaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-danger" onclick="cerrarModalPrestamo()">Cancelar</button>
+                <button type="submit" class="btn btn-success" id="btnGuardarPrestamo">📋 Registrar Préstamo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================
+TOAST
 ============================================================ -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
     // ============================================================
-    //  CONFIGURACIÓN DE FIREBASE - ¡YA CON TUS DATOS!
+    //  CONFIGURACIÓN DE FIREBASE
     //  ============================================================
     const firebaseConfig = {
         apiKey: "AIzaSyD4wW02ZlKNvpru_C3TWLrNtS6h-du6lz4",
@@ -1189,18 +1312,67 @@ TOAST NOTIFICACIONES
         measurementId: "G-EM1TC1XN97"
     };
 
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
     // ============================================================
-    //  GESTIÓN DE SESIÓN CON FIREBASE
+    //  CONFIGURACIÓN DE EMAILJS
+    //  ============================================================
+    const EMAILJS_PUBLIC_KEY = 'gcPOJFiRNxa4VeKGo';
+    const EMAILJS_SERVICE_ID = 'service_fyugdmi';
+    const EMAILJS_TEMPLATE_ID = 'template_55bjozo';
+
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+
+    // ============================================================
+    //  CONFIGURACIÓN DE GOOGLE DRIVE - ¡CON TUS CREDENCIALES!
+    //  ============================================================
+    const CLIENT_ID = '314904860075-j05hucjbmt48fcm9s4guepqnhh5o1fen.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyAWeZrrhlb5O2-sA-is1R6GjLS-OkftNzI';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const FOLDER_NAME = 'Biblioteca_La_Concepcion_Backups';
+
+    // ============================================================
+    //  ESTADO GLOBAL
+    // ============================================================
+    const STORAGE_KEY = 'biblioteca_concepcion_libros';
+    const PRESTAMOS_KEY = 'biblioteca_concepcion_prestamos';
+    const BACKUP_KEY = 'biblioteca_concepcion_ultimo_backup';
+
+    let libros = [];
+    let prestamos = [];
+    let paginaActual = 1;
+    let paginaPrestamos = 1;
+    const POR_PAGINA = 15;
+    let pestanaActual = 'libros';
+    let intervaloBackup = null;
+    let intervaloAlertas = null;
+    let gapiInicializado = false;
+    let tokenAcceso = null;
+
+    // ============================================================
+    //  INICIALIZACIÓN
+    // ============================================================
+
+    verificarSesion();
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            cerrarModal();
+            cerrarModalPrestamo();
+        }
+    });
+
+    // Inicializar Google Drive API
+    iniciarGapi();
+
+    // ============================================================
+    //  GESTIÓN DE SESIÓN
     // ============================================================
 
     function verificarSesion() {
         auth.onAuthStateChanged(user => {
             if (user) {
-                // Usuario autenticado
                 document.getElementById('userEmailDisplay').textContent = user.email;
                 mostrarContenido();
                 mostrarToast(`✅ Bienvenido, ${user.displayName || user.email}`, 'success');
@@ -1225,11 +1397,16 @@ TOAST NOTIFICACIONES
         document.getElementById('loginOverlay').classList.add('hidden');
         document.getElementById('mainContent').style.display = 'flex';
         cargarLibros();
+        cargarPrestamos();
         renderizarTabla();
+        renderizarPrestamos();
         actualizarEstadisticas();
+        actualizarEstadisticasPrestamos();
         cargarFiltros();
         actualizarIndicadorBackup();
+        actualizarAlertas();
         iniciarBackupAutomatico();
+        iniciarAlertasAutomaticas();
     }
 
     // ============================================================
@@ -1242,29 +1419,19 @@ TOAST NOTIFICACIONES
         const password = document.getElementById('passwordInput').value;
         const btn = document.getElementById('btnLogin');
         const errorMsg = document.getElementById('loginError');
-        const successMsg = document.getElementById('loginSuccess');
 
         btn.disabled = true;
         errorMsg.classList.remove('visible');
-        successMsg.classList.remove('visible');
 
         try {
             await auth.signInWithEmailAndPassword(email, password);
-            // El onAuthStateChanged se encarga del resto
         } catch (error) {
-            console.error('Error al iniciar sesión:', error);
             let mensaje = '❌ Error al iniciar sesión. ';
-            if (error.code === 'auth/user-not-found') {
-                mensaje += 'Usuario no encontrado.';
-            } else if (error.code === 'auth/wrong-password') {
-                mensaje += 'Contraseña incorrecta.';
-            } else if (error.code === 'auth/invalid-email') {
-                mensaje += 'Email inválido.';
-            } else if (error.code === 'auth/too-many-requests') {
-                mensaje += 'Demasiados intentos. Intenta más tarde.';
-            } else {
-                mensaje += error.message;
-            }
+            if (error.code === 'auth/user-not-found') mensaje += 'Usuario no encontrado.';
+            else if (error.code === 'auth/wrong-password') mensaje += 'Contraseña incorrecta.';
+            else if (error.code === 'auth/invalid-email') mensaje += 'Email inválido.';
+            else if (error.code === 'auth/too-many-requests') mensaje += 'Demasiados intentos. Intenta más tarde.';
+            else mensaje += error.message;
             errorMsg.textContent = mensaje;
             errorMsg.classList.add('visible');
             btn.disabled = false;
@@ -1274,25 +1441,17 @@ TOAST NOTIFICACIONES
 
     async function loginWithGoogle() {
         const errorMsg = document.getElementById('loginError');
-        const successMsg = document.getElementById('loginSuccess');
         const btn = document.getElementById('btnGoogle');
-
         errorMsg.classList.remove('visible');
-        successMsg.classList.remove('visible');
         btn.disabled = true;
 
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             await auth.signInWithPopup(provider);
-            // El onAuthStateChanged se encarga del resto
         } catch (error) {
-            console.error('Error al iniciar sesión con Google:', error);
             let mensaje = '❌ Error al iniciar sesión con Google. ';
-            if (error.code === 'auth/popup-closed-by-user') {
-                mensaje += 'Ventana de autenticación cerrada.';
-            } else {
-                mensaje += error.message;
-            }
+            if (error.code === 'auth/popup-closed-by-user') mensaje += 'Ventana de autenticación cerrada.';
+            else mensaje += error.message;
             errorMsg.textContent = mensaje;
             errorMsg.classList.add('visible');
             btn.disabled = false;
@@ -1300,15 +1459,11 @@ TOAST NOTIFICACIONES
         }
     }
 
-    // ============================================================
-    //  FUNCIÓN PARA RESTABLECER CONTRASEÑA
-    //  ============================================================
     function resetPassword() {
         const email = document.getElementById('emailInput').value;
         const errorMsg = document.getElementById('loginError');
         const successMsg = document.getElementById('loginSuccess');
 
-        // Ocultar mensajes anteriores
         errorMsg.classList.remove('visible');
         successMsg.classList.remove('visible');
 
@@ -1319,7 +1474,6 @@ TOAST NOTIFICACIONES
             return;
         }
 
-        // Mostrar estado de carga
         const btn = document.getElementById('btnLogin');
         const textoOriginal = btn.textContent;
         btn.textContent = '⏳ Enviando...';
@@ -1335,15 +1489,10 @@ TOAST NOTIFICACIONES
                 setTimeout(() => successMsg.classList.remove('visible'), 8000);
             })
             .catch((error) => {
-                console.error('Error al enviar email de restablecimiento:', error);
                 let mensaje = '❌ Error al enviar el email. ';
-                if (error.code === 'auth/user-not-found') {
-                    mensaje += 'No existe una cuenta con este email.';
-                } else if (error.code === 'auth/invalid-email') {
-                    mensaje += 'Email inválido.';
-                } else {
-                    mensaje += error.message;
-                }
+                if (error.code === 'auth/user-not-found') mensaje += 'No existe una cuenta con este email.';
+                else if (error.code === 'auth/invalid-email') mensaje += 'Email inválido.';
+                else mensaje += error.message;
                 errorMsg.textContent = mensaje;
                 errorMsg.classList.add('visible');
                 btn.textContent = textoOriginal;
@@ -1366,60 +1515,220 @@ TOAST NOTIFICACIONES
     // ============================================================
 
     function enviarEmail() {
-        const email = 'elinformaticoencasa@gmail.com';
-        const asunto = encodeURIComponent('Consulta sobre la app Biblioteca La Concepción');
-        const cuerpo = encodeURIComponent('Hola,\n\nMe pongo en contacto desde la aplicación de la Biblioteca La Concepción para...\n\nSaludos.');
-        window.location.href = `mailto:${email}?subject=${asunto}&body=${cuerpo}`;
+        window.location.href = 'mailto:elinformaticoencasa@gmail.com?subject=Consulta sobre la app Biblioteca La Concepción&body=Hola,%0A%0AMe pongo en contacto desde la aplicación de la Biblioteca La Concepción para...%0A%0ASaludos.';
         mostrarToast('📧 Abriendo cliente de correo...', 'info');
     }
 
     function enviarEmailContacto() {
-        const email = 'elinformaticoencasa@gmail.com';
-        const asunto = encodeURIComponent('Solicitud de acceso - Biblioteca La Concepción');
-        const cuerpo = encodeURIComponent('Hola,\n\nMe gustaría solicitar acceso a la aplicación de la Biblioteca La Concepción.\n\nSaludos.');
-        window.location.href = `mailto:${email}?subject=${asunto}&body=${cuerpo}`;
+        window.location.href = 'mailto:elinformaticoencasa@gmail.com?subject=Solicitud de acceso - Biblioteca La Concepción&body=Hola,%0A%0AMe gustaría solicitar acceso a la aplicación de la Biblioteca La Concepción.%0A%0ASaludos.';
         mostrarToast('📧 Abriendo cliente de correo...', 'info');
     }
 
     // ============================================================
-    //  CONFIGURACIÓN Y ESTADO GLOBAL
+    //  GOOGLE DRIVE - BACKUP EN LA NUBE
     // ============================================================
 
-    const STORAGE_KEY = 'biblioteca_concepcion_libros';
-    const BACKUP_KEY = 'biblioteca_concepcion_ultimo_backup';
-    const BACKUP_INTERVAL = 5 * 60 * 1000;
+    function iniciarGapi() {
+        try {
+            gapi.load('client:auth2', () => {
+                gapi.client.init({
+                    apiKey: API_KEY,
+                    clientId: CLIENT_ID,
+                    scope: SCOPES,
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+                }).then(() => {
+                    gapiInicializado = true;
+                    console.log('✅ Google Drive API inicializada');
+                    const auth = gapi.auth2.getAuthInstance();
+                    if (auth.isSignedIn.get()) {
+                        tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
+                        console.log('✅ Sesión de Google Drive activa');
+                    }
+                }).catch(err => {
+                    console.warn('⚠️ Error al inicializar Google API:', err);
+                });
+            });
+        } catch(e) {
+            console.warn('⚠️ Error al cargar Google API:', e);
+        }
+    }
 
-    let libros = [];
-    let paginaActual = 1;
-    const POR_PAGINA = 15;
-    let intervaloBackup = null;
+    function autenticarGoogle() {
+        return new Promise((resolve, reject) => {
+            if (!gapiInicializado) {
+                reject('Google API no inicializada');
+                return;
+            }
+            const auth = gapi.auth2.getAuthInstance();
+            if (auth.isSignedIn.get()) {
+                tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
+                resolve(tokenAcceso);
+            } else {
+                auth.signIn().then(() => {
+                    tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
+                    resolve(tokenAcceso);
+                }).catch(err => {
+                    reject(err);
+                });
+            }
+        });
+    }
 
-    // ============================================================
-    //  INICIALIZACIÓN
-    // ============================================================
+    function actualizarIndicadorBackup() {
+        const fecha = localStorage.getItem(BACKUP_KEY);
+        const elemento = document.getElementById('ultimaCopiaTexto');
+        const estado = document.getElementById('estadoBackup');
 
-    verificarSesion();
+        if (fecha) {
+            try {
+                const d = new Date(fecha);
+                elemento.textContent = d.toLocaleString('es-ES', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                estado.className = 'estado';
+            } catch(e) {
+                elemento.textContent = '--:--';
+                estado.className = 'estado error';
+            }
+        } else {
+            elemento.textContent = 'Sin copia';
+            estado.className = 'estado error';
+        }
+    }
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') cerrarModal();
-        // Enter en el campo de email o contraseña activa el login
-        if (e.key === 'Enter') {
-            const active = document.activeElement;
-            if (active.id === 'emailInput' || active.id === 'passwordInput') {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    function guardarFechaBackup() {
+        localStorage.setItem(BACKUP_KEY, new Date().toISOString());
+        actualizarIndicadorBackup();
+    }
+
+    async function backupManual() {
+        guardarFechaBackup();
+        mostrarToast('💾 Copia local guardada', 'success');
+
+        if (!gapiInicializado) {
+            mostrarToast('⚠️ Google Drive no disponible. Solo copia local.', 'warning');
+            return;
+        }
+
+        try {
+            await autenticarGoogle();
+            await realizarBackup(true);
+        } catch (error) {
+            console.error('Error en backup manual:', error);
+            mostrarToast('⚠️ No se pudo conectar con Google Drive. Solo copia local.', 'warning');
+        }
+    }
+
+    async function realizarBackup(mostrarNotificacion = false) {
+        guardarFechaBackup();
+
+        if (!gapiInicializado || !tokenAcceso) {
+            return;
+        }
+
+        try {
+            const data = JSON.stringify({ libros, prestamos }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const fecha = new Date().toISOString().replace(/[:.]/g, '-');
+            const nombreArchivo = `backup_${fecha}.json`;
+
+            const carpetaId = await buscarOCrearCarpeta();
+            
+            const metadata = { 
+                name: nombreArchivo, 
+                parents: [carpetaId], 
+                mimeType: 'application/json' 
+            };
+            
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', blob);
+
+            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${tokenAcceso}` },
+                body: form
+            });
+
+            const result = await response.json();
+            if (result.id && mostrarNotificacion) {
+                mostrarToast('☁️ Backup guardado en Google Drive', 'success');
+            }
+        } catch (error) {
+            console.error('Error en backup a Google Drive:', error);
+            if (mostrarNotificacion) {
+                mostrarToast('⚠️ Error al guardar en Google Drive', 'error');
             }
         }
-    });
+    }
+
+    async function buscarOCrearCarpeta() {
+        // Buscar carpeta existente
+        const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files?q=name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+            { headers: { 'Authorization': `Bearer ${tokenAcceso}` } }
+        );
+        const data = await response.json();
+
+        if (data.files && data.files.length > 0) {
+            return data.files[0].id;
+        } else {
+            // Crear carpeta
+            const metadata = { 
+                name: FOLDER_NAME, 
+                mimeType: 'application/vnd.google-apps.folder' 
+            };
+            const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${tokenAcceso}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(metadata)
+            });
+            const result = await createResponse.json();
+            if (result.id) {
+                return result.id;
+            } else {
+                throw new Error('Error al crear carpeta');
+            }
+        }
+    }
 
     function iniciarBackupAutomatico() {
         if (intervaloBackup) clearInterval(intervaloBackup);
         intervaloBackup = setInterval(() => {
-            realizarBackup(false);
-        }, BACKUP_INTERVAL);
+            // Solo intentar backup si hay token
+            if (tokenAcceso) {
+                realizarBackup(false);
+            }
+        }, 5 * 60 * 1000); // Cada 5 minutos
     }
 
     // ============================================================
-    //  GESTIÓN DE DATOS
+    //  PESTAÑAS
+    // ============================================================
+
+    function cambiarPestana(pestana) {
+        pestanaActual = pestana;
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab${pestana.charAt(0).toUpperCase() + pestana.slice(1)}`).classList.add('active');
+        
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab${pestana.charAt(0).toUpperCase() + pestana.slice(1)}`).classList.add('active');
+
+        if (pestana === 'prestamos') {
+            renderizarPrestamos();
+            actualizarEstadisticasPrestamos();
+        } else if (pestana === 'alertas') {
+            actualizarAlertas();
+        }
+    }
+
+    // ============================================================
+    //  GESTIÓN DE LIBROS
     // ============================================================
 
     function cargarLibros() {
@@ -1428,9 +1737,7 @@ TOAST NOTIFICACIONES
             try {
                 libros = JSON.parse(data);
                 if (!Array.isArray(libros)) libros = [];
-            } catch(e) {
-                libros = [];
-            }
+            } catch(e) { libros = []; }
         } else {
             libros = cargarDatosEjemplo();
             guardarLibros();
@@ -1445,124 +1752,235 @@ TOAST NOTIFICACIONES
 
     function cargarDatosEjemplo() {
         return [
-            { id: 892, titulo: '"LES CEDRES". AN EXCEPTIONAL BOTANICAL GARDEN', editorial: 'FRANKLIN PICARD EDITIONS', ciudad: 'PARIS', anio: 1999, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '71 - Jardinería/Paisaje', ubicacion: 'DIR13', seccion: 'Sección Adultos' },
-            { id: 600, titulo: '(OTRAS) HISTORIA(S) DE MÁLAGA', editorial: 'PROMOTORA CULTURAL MALAGUEÑA', ciudad: 'MÁLAGA', anio: 1997, idioma: 'Español', procedencia: 'Legado José Antonio del Cañizo', materia: '63 - Agricultura/Técnica', ubicacion: 'TEC14', seccion: 'Sección Adultos' },
-            { id: 1081, titulo: '¿ALGO MÁS QUE UN PATIO DE RECREO….?', editorial: 'JUNTA DE ANDALUCÍA', ciudad: 'SEVILLA', anio: 1992, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '9 - Geografía/Medio Ambiente', ubicacion: 'EN 21', seccion: 'Sección Adultos' },
-            { id: 123, titulo: '¿QUÉ SON LAS REVOLUCIONES CIENTÍFICAS?', editorial: 'PAIDOS IBERICA', ciudad: 'BARCELONA', anio: 1989, idioma: 'Español', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT23', seccion: 'Sección Adultos' },
-            { id: 1074, titulo: '10 AÑOS DE EDUCACIÓN AMBIENTAL E INNOVACIÓN EDUCATIVA', editorial: 'HUERTO ALEGRE', ciudad: 'GRANADA', anio: 1991, idioma: 'Español', procedencia: 'Legado José Antonio del Cañizo', materia: '9 - Geografía/Medio Ambiente', ubicacion: 'EN 21', seccion: 'Sección Adultos' },
-            { id: 60, titulo: '100 FAMILIES OF FLOWERING PLANTS', editorial: 'CAMBRIDGE UNIVERSITY PRESS', ciudad: 'CAMBRIDGE', anio: 1988, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT14', seccion: 'Sección Adultos' },
-            { id: 113, titulo: '100 TREE MYTHS', editorial: 'SHIGO AND TREES ASSOCIATES', ciudad: 'NEW HAMPSHIRE', anio: 1995, idioma: 'Español', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT22', seccion: 'Sección Adultos' },
-            { id: 1287, titulo: '150 FÓRMULAS DE PINTURA DECORATIVA', editorial: 'CEAC', ciudad: 'BARCELONA', anio: 1996, idioma: 'Español', procedencia: 'Legado José Antonio del Cañizo', materia: '7 - Bellas Artes', ubicacion: 'ET 31', seccion: 'Sección Adultos' },
-            { id: 166, titulo: 'A CITES MANUAL FOR BOTANIC GARDENS', editorial: 'BOTANIC GARDENS CONSERVATION INTERNATIONAL', ciudad: 'KEW', anio: 1994, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT24', seccion: 'Sección Adultos' },
-            { id: 229, titulo: 'ACACIAS OF SOUTHEAST AUSTRALIA', editorial: 'KANGAROO PRESS', ciudad: 'KENTHURST', anio: 1992, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT41', seccion: 'Sección Adultos' },
-            { id: 337, titulo: 'ADORNOS FLORALES EN CASA', editorial: 'BLUME', ciudad: 'BARCELONA', anio: 1988, idioma: 'Francés', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT51', seccion: 'Sección Adultos' },
-            { id: 399, titulo: 'BOTANIC GARDENS AND BIODIVERSITY', editorial: 'BUNDESAMT FÜR NATURSCHUTZ', ciudad: 'BONN', anio: 2000, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT34', seccion: 'Sección Adultos' },
-            { id: 'INF-01', titulo: 'El Jardín Mágico', editorial: 'Editorial Infantil', ciudad: 'MADRID', anio: 2020, idioma: 'Español', procedencia: 'Patronato Botánico', materia: 'INFANTIL', ubicacion: 'INF', seccion: 'Sección Infantil' },
-            { id: 'INF-02', titulo: 'Aventuras en el Bosque', editorial: 'Cuentos Verdes', ciudad: 'BARCELONA', anio: 2019, idioma: 'Español', procedencia: 'Patronato Botánico', materia: 'INFANTIL', ubicacion: 'INF', seccion: 'Sección Infantil' },
-            { id: 1556, titulo: 'A TODA POTENCIA AUTOCAD 12', editorial: '', ciudad: '', anio: '', idioma: 'Español', procedencia: 'Varios/Sin ordenar', materia: 'Varios/Sin ordenar', ubicacion: 'BIB00', seccion: 'Fondo Local y Varios' },
+            { 
+                id: 892, 
+                numero: '001',
+                titulo: '"LES CEDRES". AN EXCEPTIONAL BOTANICAL GARDEN', 
+                autor: 'Varios autores',
+                editorial: 'FRANKLIN PICARD EDITIONS', 
+                ciudad: 'PARIS', 
+                anio: 1999, 
+                idioma: 'Inglés', 
+                procedencia: 'Legado José Antonio del Cañizo', 
+                materia: '71 - Jardinería/Paisaje', 
+                ubicacion: 'DIR13', 
+                seccion: 'Sección Adultos' 
+            },
+            { 
+                id: 600, 
+                numero: '002',
+                titulo: '(OTRAS) HISTORIA(S) DE MÁLAGA', 
+                autor: 'Varios autores',
+                editorial: 'PROMOTORA CULTURAL MALAGUEÑA', 
+                ciudad: 'MÁLAGA', 
+                anio: 1997, 
+                idioma: 'Español', 
+                procedencia: 'Legado José Antonio del Cañizo', 
+                materia: '63 - Agricultura/Técnica', 
+                ubicacion: 'TEC14', 
+                seccion: 'Sección Adultos' 
+            },
+            { 
+                id: 1081, 
+                numero: '003',
+                titulo: '¿ALGO MÁS QUE UN PATIO DE RECREO….?', 
+                autor: 'María García',
+                editorial: 'JUNTA DE ANDALUCÍA', 
+                ciudad: 'SEVILLA', 
+                anio: 1992, 
+                idioma: 'Inglés', 
+                procedencia: 'Legado José Antonio del Cañizo', 
+                materia: '9 - Geografía/Medio Ambiente', 
+                ubicacion: 'EN 21', 
+                seccion: 'Sección Adultos' 
+            },
+            { 
+                id: 123, 
+                numero: '004',
+                titulo: '¿QUÉ SON LAS REVOLUCIONES CIENTÍFICAS?', 
+                autor: 'Thomas S. Kuhn',
+                editorial: 'PAIDOS IBERICA', 
+                ciudad: 'BARCELONA', 
+                anio: 1989, 
+                idioma: 'Español', 
+                procedencia: 'Legado José Antonio del Cañizo', 
+                materia: '58 - Botánica', 
+                ubicacion: 'BOT23', 
+                seccion: 'Sección Adultos' 
+            },
         ];
     }
 
     // ============================================================
-    //  RENDERIZADO DE TABLA
+    //  GESTIÓN DE PRÉSTAMOS
     // ============================================================
 
-    function getLibrosFiltrados() {
-        const busqueda = document.getElementById('searchInput').value.toLowerCase().trim();
-        const idioma = document.getElementById('filtroIdioma').value;
-        const procedencia = document.getElementById('filtroProcedencia').value;
-        const materia = document.getElementById('filtroMateria').value;
-
-        return libros.filter(libro => {
-            const matchBusqueda = !busqueda ||
-                libro.titulo.toLowerCase().includes(busqueda) ||
-                (libro.editorial && libro.editorial.toLowerCase().includes(busqueda)) ||
-                (libro.ciudad && libro.ciudad.toLowerCase().includes(busqueda)) ||
-                (libro.materia && libro.materia.toLowerCase().includes(busqueda));
-
-            const matchIdioma = !idioma || libro.idioma === idioma;
-            const matchProcedencia = !procedencia || libro.procedencia === procedencia;
-            const matchMateria = !materia || (libro.materia && libro.materia.includes(materia));
-
-            return matchBusqueda && matchIdioma && matchProcedencia && matchMateria;
-        });
+    function cargarPrestamos() {
+        const data = localStorage.getItem(PRESTAMOS_KEY);
+        if (data) {
+            try {
+                prestamos = JSON.parse(data);
+                if (!Array.isArray(prestamos)) prestamos = [];
+            } catch(e) { prestamos = []; }
+        } else {
+            prestamos = [];
+            guardarPrestamos();
+        }
+        return prestamos;
     }
 
-    function renderizarTabla() {
-        const filtrados = getLibrosFiltrados();
-        const totalFiltrados = filtrados.length;
-        const totalPaginas = Math.ceil(totalFiltrados / POR_PAGINA);
+    function guardarPrestamos() {
+        localStorage.setItem(PRESTAMOS_KEY, JSON.stringify(prestamos));
+        actualizarEstadisticasPrestamos();
+        actualizarBadges();
+        actualizarAlertas();
+    }
 
-        if (paginaActual > totalPaginas && totalPaginas > 0) paginaActual = totalPaginas;
-        if (paginaActual < 1) paginaActual = 1;
+    function getLibroById(id) {
+        return libros.find(l => l.id == id);
+    }
 
-        const inicio = (paginaActual - 1) * POR_PAGINA;
-        const fin = Math.min(inicio + POR_PAGINA, totalFiltrados);
-        const paginaLibros = filtrados.slice(inicio, fin);
+    function getLibroDisponible(id) {
+        const prestamoActivo = prestamos.find(p => p.libroId == id && p.estado !== 'devuelto');
+        return !prestamoActivo;
+    }
 
-        const tbody = document.getElementById('tablaBody');
+    // ============================================================
+    //  ALERTAS
+    // ============================================================
 
-        if (totalFiltrados === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8">
-                        <div class="empty-state">
-                            <div class="icon">📭</div>
-                            <p>No hay libros que coincidan con tu búsqueda</p>
-                            <p style="font-size:0.85rem; margin-top:8px;">Prueba con otros términos o añade un nuevo libro</p>
-                        </div>
-                    </td>
-                </tr>
+    function actualizarAlertas() {
+        const container = document.getElementById('alertasContainer');
+        const hoy = new Date();
+        const alertas = [];
+
+        prestamos.forEach(p => {
+            if (p.estado === 'devuelto') return;
+            const fechaPrestamo = new Date(p.fechaPrestamo);
+            const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
+            if (diffDias > 30) {
+                const libro = getLibroById(p.libroId);
+                alertas.push({
+                    tipo: 'retraso',
+                    gravedad: 'alta',
+                    mensaje: `📖 "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días sin devolver.`,
+                    socio: p.socio,
+                    email: p.email,
+                    telefono: p.telefono,
+                    prestamoId: p.id,
+                    dias: diffDias
+                });
+            }
+        });
+
+        const badge = document.getElementById('alertasBadge');
+        if (alertas.length > 0) {
+            badge.style.display = 'inline';
+            badge.textContent = alertas.length;
+        } else {
+            badge.style.display = 'none';
+        }
+
+        if (alertas.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">✅</div>
+                    <p>No hay alertas pendientes</p>
+                    <p style="font-size:0.85rem; margin-top:8px;">Todos los préstamos están en plazo</p>
+                </div>
             `;
         } else {
-            tbody.innerHTML = paginaLibros.map(libro => `
-                <tr>
-                    <td><strong>${libro.id}</strong></td>
-                    <td style="max-width:300px; word-wrap:break-word;">${escapeHTML(libro.titulo)}</td>
-                    <td>${escapeHTML(libro.editorial || '')}</td>
-                    <td>${libro.anio || ''}</td>
-                    <td><span class="badge badge-${getIdiomaClase(libro.idioma)}">${libro.idioma || 'Desconocido'}</span></td>
-                    <td style="font-size:0.75rem;">${escapeHTML(libro.materia || '')}</td>
-                    <td><span class="badge-procedencia ${getProcedenciaClase(libro.procedencia)}">${libro.procedencia || 'Sin clasificar'}</span></td>
-                    <td>
-                        <button class="btn-accion editar" onclick="editarLibro('${libro.id}')">✏️</button>
-                        <button class="btn-accion eliminar" onclick="eliminarLibro('${libro.id}')">🗑️</button>
-                    </td>
-                </tr>
-            `).join('');
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="background:#fee2e2;padding:12px 16px;border-radius:12px;border-left:4px solid #e53e3e;">
+                        <strong>🔴 ${alertas.length} préstamo(s) retrasado(s)</strong>
+                        <p style="font-size:0.85rem;color:#4a5568;margin-top:4px;">Estos libros llevan más de 30 días sin devolver:</p>
+                    </div>
+                    ${alertas.map(a => `
+                        <div style="background:white;padding:14px 18px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #e53e3e;">
+                            <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;">
+                                <div>
+                                    <div style="font-weight:600;">${a.mensaje}</div>
+                                    <div style="font-size:0.85rem;color:#4a5568;margin-top:4px;">
+                                        👤 ${a.socio} · 📧 ${a.email}
+                                        ${a.telefono ? ` · 📱 ${a.telefono}` : ''}
+                                    </div>
+                                    <div style="font-size:0.8rem;color:#e53e3e;margin-top:2px;">
+                                        ⏰ ${a.dias} días de retraso
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                    <button class="btn btn-sm btn-info" onclick="enviarEmailRecordatorio('${a.prestamoId}')">
+                                        📧 Email
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="devolverPrestamo('${a.prestamoId}')">
+                                        ✅ Devolver
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+
+    function iniciarAlertasAutomaticas() {
+        if (intervaloAlertas) clearInterval(intervaloAlertas);
+        intervaloAlertas = setInterval(() => {
+            actualizarAlertas();
+        }, 60000);
+    }
+
+    // ============================================================
+    //  ENVIAR EMAIL DE RECORDATORIO
+    // ============================================================
+
+    async function enviarEmailRecordatorio(prestamoId) {
+        const prestamo = prestamos.find(p => p.id == prestamoId);
+        if (!prestamo) {
+            mostrarToast('❌ Préstamo no encontrado', 'error');
+            return;
         }
 
-        document.getElementById('infoPaginacion').textContent =
-            `Mostrando ${totalFiltrados > 0 ? inicio+1 : 0} - ${fin} de ${totalFiltrados} libros`;
+        const libro = getLibroById(prestamo.libroId);
+        const hoy = new Date();
+        const fechaPrestamo = new Date(prestamo.fechaPrestamo);
+        const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
 
-        const controles = document.getElementById('paginacionControles');
-        if (totalPaginas <= 1) {
-            controles.innerHTML = '';
+        try {
+            const templateParams = {
+                to_email: prestamo.email,
+                to_name: prestamo.socio,
+                libro_titulo: libro?.titulo || 'Libro desconocido',
+                dias_retraso: diffDias,
+                fecha_prestamo: new Date(prestamo.fechaPrestamo).toLocaleDateString('es-ES'),
+                biblioteca: 'Biblioteca La Concepción',
+                mensaje: `Te recordamos que el libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días de retraso. Por favor, devuélvelo lo antes posible.`
+            };
+
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+            mostrarToast(`📧 Email de recordatorio enviado a ${prestamo.email}`, 'success');
+        } catch (error) {
+            console.error('Error al enviar email:', error);
+            mostrarToast('❌ Error al enviar el email: ' + error.message, 'error');
+        }
+    }
+
+    // ============================================================
+    //  ACTUALIZAR BADGES
+    // ============================================================
+
+    function actualizarBadges() {
+        const activos = prestamos.filter(p => p.estado === 'activo' || p.estado === 'retrasado');
+        const badgePrestamos = document.getElementById('prestamosBadge');
+        if (activos.length > 0) {
+            badgePrestamos.style.display = 'inline';
+            badgePrestamos.textContent = activos.length;
         } else {
-            let html = '';
-            for (let i = 1; i <= totalPaginas; i++) {
-                const activo = i === paginaActual;
-                html += `<button class="btn ${activo ? 'btn-success' : 'btn-outline'}" 
-                                style="${activo ? '' : 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;'}"
-                                onclick="irPagina(${i})">${i}</button>`;
-            }
-            controles.innerHTML = html;
+            badgePrestamos.style.display = 'none';
         }
-    }
-
-    function irPagina(pagina) {
-        paginaActual = pagina;
-        renderizarTabla();
-        document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    function limpiarFiltros() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('filtroIdioma').value = '';
-        document.getElementById('filtroProcedencia').value = '';
-        document.getElementById('filtroMateria').value = '';
-        paginaActual = 1;
-        renderizarTabla();
+        actualizarAlertas();
     }
 
     // ============================================================
@@ -1579,8 +1997,20 @@ TOAST NOTIFICACIONES
         document.getElementById('totalMaterias').textContent = materias.size;
     }
 
+    function actualizarEstadisticasPrestamos() {
+        const total = prestamos.length;
+        const activos = prestamos.filter(p => p.estado === 'activo').length;
+        const retrasados = prestamos.filter(p => p.estado === 'retrasado').length;
+        const devueltos = prestamos.filter(p => p.estado === 'devuelto').length;
+
+        document.getElementById('totalPrestamos').textContent = total;
+        document.getElementById('prestamosActivos').textContent = activos;
+        document.getElementById('prestamosRetrasados').textContent = retrasados;
+        document.getElementById('prestamosDevueltos').textContent = devueltos;
+    }
+
     // ============================================================
-    //  FILTROS
+    //  FILTROS DE LIBROS
     // ============================================================
 
     function cargarFiltros() {
@@ -1621,7 +2051,120 @@ TOAST NOTIFICACIONES
     }
 
     // ============================================================
-    //  CRUD
+    //  RENDERIZAR TABLA DE LIBROS
+    // ============================================================
+
+    function getLibrosFiltrados() {
+        const busqueda = document.getElementById('searchInput').value.toLowerCase().trim();
+        const idioma = document.getElementById('filtroIdioma').value;
+        const procedencia = document.getElementById('filtroProcedencia').value;
+        const materia = document.getElementById('filtroMateria').value;
+
+        return libros.filter(libro => {
+            const matchBusqueda = !busqueda ||
+                libro.titulo.toLowerCase().includes(busqueda) ||
+                (libro.autor && libro.autor.toLowerCase().includes(busqueda)) ||
+                (libro.editorial && libro.editorial.toLowerCase().includes(busqueda)) ||
+                (libro.ciudad && libro.ciudad.toLowerCase().includes(busqueda)) ||
+                (libro.materia && libro.materia.toLowerCase().includes(busqueda)) ||
+                (libro.numero && libro.numero.toLowerCase().includes(busqueda));
+
+            const matchIdioma = !idioma || libro.idioma === idioma;
+            const matchProcedencia = !procedencia || libro.procedencia === procedencia;
+            const matchMateria = !materia || (libro.materia && libro.materia.includes(materia));
+
+            return matchBusqueda && matchIdioma && matchProcedencia && matchMateria;
+        });
+    }
+
+    function renderizarTabla() {
+        const filtrados = getLibrosFiltrados();
+        const totalFiltrados = filtrados.length;
+        const totalPaginas = Math.ceil(totalFiltrados / POR_PAGINA);
+
+        if (paginaActual > totalPaginas && totalPaginas > 0) paginaActual = totalPaginas;
+        if (paginaActual < 1) paginaActual = 1;
+
+        const inicio = (paginaActual - 1) * POR_PAGINA;
+        const fin = Math.min(inicio + POR_PAGINA, totalFiltrados);
+        const paginaLibros = filtrados.slice(inicio, fin);
+
+        const tbody = document.getElementById('tablaBody');
+
+        if (totalFiltrados === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <div class="icon">📭</div>
+                            <p>No hay libros que coincidan con tu búsqueda</p>
+                            <p style="font-size:0.85rem; margin-top:8px;">Prueba con otros términos o añade un nuevo libro</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML = paginaLibros.map(libro => {
+                const disponible = getLibroDisponible(libro.id);
+                return `
+                <tr>
+                    <td><strong>${libro.id}</strong></td>
+                    <td>${libro.numero || '-'}</td>
+                    <td style="max-width:200px; word-wrap:break-word;">${escapeHTML(libro.titulo)}</td>
+                    <td style="max-width:150px; word-wrap:break-word;">${escapeHTML(libro.autor || '')}</td>
+                    <td style="max-width:150px; word-wrap:break-word;">${escapeHTML(libro.editorial || '')}</td>
+                    <td>${libro.anio || ''}</td>
+                    <td><span class="badge badge-${getIdiomaClase(libro.idioma)}">${libro.idioma || 'Desconocido'}</span></td>
+                    <td><span class="badge-procedencia ${getProcedenciaClase(libro.procedencia)}">${libro.procedencia || 'Sin clasificar'}</span></td>
+                    <td>
+                        <button class="btn-accion editar" onclick="editarLibro('${libro.id}')" title="Editar">✏️</button>
+                        <button class="btn-accion eliminar" onclick="eliminarLibro('${libro.id}')" title="Eliminar">🗑️</button>
+                        <button class="btn-accion prestar" 
+                                onclick="${disponible ? `abrirModalPrestamoConLibro('${libro.id}')` : ''}"
+                                title="${disponible ? 'Prestar libro' : 'No disponible'}"
+                                ${!disponible ? 'style="opacity:0.5;cursor:not-allowed;"' : ''}>
+                            ${disponible ? '📋 Prestar' : '🔒'}
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        document.getElementById('infoPaginacion').textContent =
+            `Mostrando ${totalFiltrados > 0 ? inicio+1 : 0} - ${fin} de ${totalFiltrados} libros`;
+
+        const controles = document.getElementById('paginacionControles');
+        if (totalPaginas <= 1) {
+            controles.innerHTML = '';
+        } else {
+            let html = '';
+            for (let i = 1; i <= totalPaginas; i++) {
+                const activo = i === paginaActual;
+                html += `<button class="btn ${activo ? 'btn-success' : 'btn-outline'}" 
+                                style="${activo ? '' : 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;'}"
+                                onclick="irPagina(${i})">${i}</button>`;
+            }
+            controles.innerHTML = html;
+        }
+    }
+
+    function irPagina(pagina) {
+        paginaActual = pagina;
+        renderizarTabla();
+        document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function limpiarFiltros() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filtroIdioma').value = '';
+        document.getElementById('filtroProcedencia').value = '';
+        document.getElementById('filtroMateria').value = '';
+        paginaActual = 1;
+        renderizarTabla();
+    }
+
+    // ============================================================
+    //  CRUD DE LIBROS
     // ============================================================
 
     function abrirModal(libro = null) {
@@ -1634,7 +2177,9 @@ TOAST NOTIFICACIONES
             btnGuardar.textContent = '💾 Actualizar Libro';
             document.getElementById('editId').value = libro.id;
             document.getElementById('nInventario').value = libro.id;
+            document.getElementById('numero').value = libro.numero || '';
             document.getElementById('titulo').value = libro.titulo || '';
+            document.getElementById('autor').value = libro.autor || '';
             document.getElementById('editorial').value = libro.editorial || '';
             document.getElementById('ciudad').value = libro.ciudad || '';
             document.getElementById('anio').value = libro.anio || '';
@@ -1674,7 +2219,9 @@ TOAST NOTIFICACIONES
 
         const libroData = {
             id: id,
+            numero: document.getElementById('numero').value.trim(),
             titulo: titulo,
+            autor: document.getElementById('autor').value.trim(),
             editorial: document.getElementById('editorial').value.trim(),
             ciudad: document.getElementById('ciudad').value.trim(),
             anio: document.getElementById('anio').value || '',
@@ -1707,7 +2254,12 @@ TOAST NOTIFICACIONES
         renderizarTabla();
         actualizarEstadisticas();
         cargarFiltros();
-        realizarBackup(false);
+        actualizarAlertas();
+        
+        // Intentar backup automático
+        if (tokenAcceso) {
+            realizarBackup(false);
+        }
     }
 
     function editarLibro(id) {
@@ -1718,6 +2270,12 @@ TOAST NOTIFICACIONES
 
     function eliminarLibro(id) {
         const libro = libros.find(l => l.id == id);
+        const prestamoActivo = prestamos.find(p => p.libroId == id && p.estado !== 'devuelto');
+        if (prestamoActivo) {
+            mostrarToast('❌ No se puede eliminar. El libro está en préstamo.', 'error');
+            return;
+        }
+
         if (!confirm(`¿Eliminar "${libro?.titulo || id}"?`)) return;
 
         libros = libros.filter(l => l.id != id);
@@ -1726,7 +2284,253 @@ TOAST NOTIFICACIONES
         actualizarEstadisticas();
         cargarFiltros();
         mostrarToast('🗑️ Libro eliminado', 'info');
-        realizarBackup(false);
+        
+        if (tokenAcceso) {
+            realizarBackup(false);
+        }
+    }
+
+    // ============================================================
+    //  CRUD DE PRÉSTAMOS
+    // ============================================================
+
+    function abrirModalPrestamo() {
+        const modal = document.getElementById('modalPrestamo');
+        document.getElementById('modalPrestamoTitulo').textContent = '📋 Nuevo Préstamo';
+        document.getElementById('editPrestamoId').value = '';
+        document.getElementById('prestamoForm').reset();
+        document.getElementById('btnGuardarPrestamo').textContent = '📋 Registrar Préstamo';
+
+        const select = document.getElementById('prestamoLibro');
+        select.innerHTML = '<option value="">Selecciona un libro...</option>';
+        libros.forEach(libro => {
+            if (getLibroDisponible(libro.id)) {
+                const opt = document.createElement('option');
+                opt.value = libro.id;
+                const numInfo = libro.numero ? ` [${libro.numero}]` : '';
+                opt.textContent = `${libro.id}${numInfo} - ${libro.titulo.substring(0, 60)}${libro.titulo.length > 60 ? '...' : ''}`;
+                select.appendChild(opt);
+            }
+        });
+
+        document.getElementById('prestamoFecha').value = new Date().toISOString().split('T')[0];
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function abrirModalPrestamoConLibro(libroId) {
+        abrirModalPrestamo();
+        document.getElementById('prestamoLibro').value = libroId;
+    }
+
+    function cerrarModalPrestamo() {
+        document.getElementById('modalPrestamo').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function guardarPrestamo(e) {
+        e.preventDefault();
+
+        const libroId = document.getElementById('prestamoLibro').value;
+        const socio = document.getElementById('prestamoSocio').value.trim();
+        const email = document.getElementById('prestamoEmail').value.trim();
+        const telefono = document.getElementById('prestamoTelefono').value.trim();
+        const fechaPrestamo = document.getElementById('prestamoFecha').value;
+        const observaciones = document.getElementById('prestamoObservaciones').value.trim();
+
+        if (!libroId || !socio || !email || !fechaPrestamo) {
+            mostrarToast('❌ Completa todos los campos obligatorios', 'error');
+            return;
+        }
+
+        if (!getLibroDisponible(libroId)) {
+            mostrarToast('❌ El libro no está disponible para préstamo', 'error');
+            return;
+        }
+
+        const prestamo = {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+            libroId: libroId,
+            socio: socio,
+            email: email,
+            telefono: telefono || '',
+            fechaPrestamo: fechaPrestamo,
+            fechaDevolucion: '',
+            estado: 'activo',
+            observaciones: observaciones || '',
+            createdAt: new Date().toISOString()
+        };
+
+        prestamos.push(prestamo);
+        guardarPrestamos();
+        cerrarModalPrestamo();
+        renderizarPrestamos();
+        actualizarEstadisticasPrestamos();
+        actualizarBadges();
+        actualizarAlertas();
+        renderizarTabla();
+        mostrarToast(`✅ Préstamo registrado para "${socio}"`, 'success');
+        
+        if (tokenAcceso) {
+            realizarBackup(false);
+        }
+    }
+
+    function renderizarPrestamos() {
+        const busqueda = document.getElementById('searchPrestamos').value.toLowerCase().trim();
+        const estadoFiltro = document.getElementById('filtroEstadoPrestamo').value;
+
+        let filtrados = prestamos;
+
+        if (busqueda) {
+            filtrados = filtrados.filter(p => {
+                const libro = getLibroById(p.libroId);
+                return p.socio.toLowerCase().includes(busqueda) ||
+                       p.email.toLowerCase().includes(busqueda) ||
+                       (libro && libro.titulo.toLowerCase().includes(busqueda));
+            });
+        }
+
+        if (estadoFiltro) {
+            filtrados = filtrados.filter(p => p.estado === estadoFiltro);
+        }
+
+        filtrados.sort((a, b) => new Date(b.fechaPrestamo) - new Date(a.fechaPrestamo));
+
+        const totalFiltrados = filtrados.length;
+        const totalPaginas = Math.ceil(totalFiltrados / POR_PAGINA);
+
+        if (paginaPrestamos > totalPaginas && totalPaginas > 0) paginaPrestamos = totalPaginas;
+        if (paginaPrestamos < 1) paginaPrestamos = 1;
+
+        const inicio = (paginaPrestamos - 1) * POR_PAGINA;
+        const fin = Math.min(inicio + POR_PAGINA, totalFiltrados);
+        const paginaPrestamosData = filtrados.slice(inicio, fin);
+
+        const tbody = document.getElementById('tablaPrestamos');
+
+        if (totalFiltrados === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <div class="icon">📋</div>
+                            <p>No hay préstamos registrados</p>
+                            <p style="font-size:0.85rem; margin-top:8px;">Registra el primer préstamo con el botón "Nuevo Préstamo"</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML = paginaPrestamosData.map(p => {
+                const libro = getLibroById(p.libroId);
+                const hoy = new Date();
+                const fechaPrestamo = new Date(p.fechaPrestamo);
+                const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
+                
+                if (p.estado === 'activo' && diffDias > 30) {
+                    p.estado = 'retrasado';
+                    const index = prestamos.findIndex(pr => pr.id === p.id);
+                    if (index !== -1) prestamos[index].estado = 'retrasado';
+                    guardarPrestamos();
+                }
+
+                const estadoBadge = p.estado === 'devuelto' ? 'devuelto' : 
+                                   p.estado === 'retrasado' ? 'retrasado' : 'activo';
+                const estadoTexto = p.estado === 'devuelto' ? '✅ Devuelto' :
+                                   p.estado === 'retrasado' ? '🔴 Retrasado' : '🟢 Activo';
+
+                return `
+                <tr>
+                    <td><strong>${p.id.substring(0, 8)}</strong></td>
+                    <td style="max-width:200px;word-wrap:break-word;">${libro ? escapeHTML(libro.titulo) : '⚠️ Libro eliminado'}</td>
+                    <td>${escapeHTML(p.socio)}</td>
+                    <td style="font-size:0.75rem;">${escapeHTML(p.email)}</td>
+                    <td>${p.telefono ? escapeHTML(p.telefono) : '-'}</td>
+                    <td style="font-size:0.75rem;">${new Date(p.fechaPrestamo).toLocaleDateString('es-ES')}</td>
+                    <td style="font-size:0.75rem;">${p.fechaDevolucion ? new Date(p.fechaDevolucion).toLocaleDateString('es-ES') : '-'}</td>
+                    <td><span class="badge-estado ${estadoBadge}">${estadoTexto}</span></td>
+                    <td>
+                        ${p.estado !== 'devuelto' ? `
+                            <button class="btn-accion devolver" onclick="devolverPrestamo('${p.id}')" title="Marcar como devuelto">✅</button>
+                            <button class="btn-accion email" onclick="enviarEmailRecordatorio('${p.id}')" title="Enviar recordatorio">📧</button>
+                        ` : ''}
+                        <button class="btn-accion eliminar" onclick="eliminarPrestamo('${p.id}')" title="Eliminar">🗑️</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        document.getElementById('infoPaginacionPrestamos').textContent =
+            `Mostrando ${totalFiltrados > 0 ? inicio+1 : 0} - ${fin} de ${totalFiltrados} préstamos`;
+
+        const controles = document.getElementById('paginacionControlesPrestamos');
+        if (totalPaginas <= 1) {
+            controles.innerHTML = '';
+        } else {
+            let html = '';
+            for (let i = 1; i <= totalPaginas; i++) {
+                const activo = i === paginaPrestamos;
+                html += `<button class="btn ${activo ? 'btn-success' : 'btn-outline'}" 
+                                style="${activo ? '' : 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;'}"
+                                onclick="irPaginaPrestamos(${i})">${i}</button>`;
+            }
+            controles.innerHTML = html;
+        }
+    }
+
+    function irPaginaPrestamos(pagina) {
+        paginaPrestamos = pagina;
+        renderizarPrestamos();
+    }
+
+    function limpiarFiltrosPrestamos() {
+        document.getElementById('searchPrestamos').value = '';
+        document.getElementById('filtroEstadoPrestamo').value = '';
+        paginaPrestamos = 1;
+        renderizarPrestamos();
+    }
+
+    function devolverPrestamo(id) {
+        const prestamo = prestamos.find(p => p.id == id);
+        if (!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return; }
+
+        if (!confirm(`¿Marcar como devuelto el préstamo de "${prestamo.socio}"?`)) return;
+
+        prestamo.estado = 'devuelto';
+        prestamo.fechaDevolucion = new Date().toISOString().split('T')[0];
+        guardarPrestamos();
+        renderizarPrestamos();
+        actualizarEstadisticasPrestamos();
+        actualizarBadges();
+        actualizarAlertas();
+        renderizarTabla();
+        mostrarToast(`✅ Préstamo devuelto por "${prestamo.socio}"`, 'success');
+        
+        if (tokenAcceso) {
+            realizarBackup(false);
+        }
+    }
+
+    function eliminarPrestamo(id) {
+        const prestamo = prestamos.find(p => p.id == id);
+        if (!prestamo) return;
+
+        if (!confirm(`¿Eliminar el préstamo de "${prestamo.socio}"?`)) return;
+
+        prestamos = prestamos.filter(p => p.id != id);
+        guardarPrestamos();
+        renderizarPrestamos();
+        actualizarEstadisticasPrestamos();
+        actualizarBadges();
+        actualizarAlertas();
+        renderizarTabla();
+        mostrarToast('🗑️ Préstamo eliminado', 'info');
+        
+        if (tokenAcceso) {
+            realizarBackup(false);
+        }
     }
 
     // ============================================================
@@ -1736,8 +2540,10 @@ TOAST NOTIFICACIONES
     function exportarExcel() {
         try {
             const data = libros.map(l => ({
-                'Nº': l.id,
+                'Nº Inventario': l.id,
+                'Número': l.numero || '',
                 'Título': l.titulo,
+                'Autor': l.autor || '',
                 'Editorial': l.editorial || '',
                 'Ciudad': l.ciudad || '',
                 'Año': l.anio || '',
@@ -1750,163 +2556,31 @@ TOAST NOTIFICACIONES
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(data);
-            ws['!cols'] = [{ wch: 10 }, { wch: 50 }, { wch: 30 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 30 }];
+            ws['!cols'] = [{ wch: 15 }, { wch: 12 }, { wch: 50 }, { wch: 30 }, { wch: 30 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 30 }];
             XLSX.utils.book_append_sheet(wb, ws, 'Libros');
+
+            const prestamosData = prestamos.map(p => {
+                const libro = getLibroById(p.libroId);
+                return {
+                    'ID': p.id,
+                    'Libro': libro ? libro.titulo : 'Eliminado',
+                    'Socio': p.socio,
+                    'Email': p.email,
+                    'Teléfono': p.telefono || '',
+                    'Fecha Préstamo': p.fechaPrestamo,
+                    'Fecha Devolución': p.fechaDevolucion || '',
+                    'Estado': p.estado === 'devuelto' ? 'Devuelto' : p.estado === 'retrasado' ? 'Retrasado' : 'Activo',
+                    'Observaciones': p.observaciones || ''
+                };
+            });
+            const wsPrestamos = XLSX.utils.json_to_sheet(prestamosData);
+            XLSX.utils.book_append_sheet(wb, wsPrestamos, 'Préstamos');
+
             XLSX.writeFile(wb, `Biblioteca_Concepcion_${new Date().toISOString().slice(0,10)}.xlsx`);
             mostrarToast('📊 Excel exportado correctamente', 'success');
         } catch(e) {
             mostrarToast('Error al exportar: ' + e.message, 'error');
         }
-    }
-
-    // ============================================================
-    //  BACKUP (Google Drive)
-    // ============================================================
-
-    const CLIENT_ID = 'TU_CLIENT_ID_DE_GOOGLE';
-    const API_KEY = 'TU_API_KEY';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    const FOLDER_NAME = 'Biblioteca_La_Concepcion_Backups';
-
-    let gapiInicializado = false;
-    let tokenAcceso = null;
-
-    function actualizarIndicadorBackup() {
-        const fecha = localStorage.getItem(BACKUP_KEY);
-        const elemento = document.getElementById('ultimaCopiaTexto');
-        const estado = document.getElementById('estadoBackup');
-
-        if (fecha) {
-            try {
-                const d = new Date(fecha);
-                elemento.textContent = d.toLocaleString('es-ES', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-                estado.className = 'estado';
-            } catch(e) {
-                elemento.textContent = '--:--';
-                estado.className = 'estado error';
-            }
-        } else {
-            elemento.textContent = 'Sin copia';
-            estado.className = 'estado error';
-        }
-    }
-
-    function guardarFechaBackup() {
-        localStorage.setItem(BACKUP_KEY, new Date().toISOString());
-        actualizarIndicadorBackup();
-    }
-
-    function backupManual() {
-        guardarFechaBackup();
-        mostrarToast('💾 Copia local guardada', 'success');
-
-        if (CLIENT_ID === 'TU_CLIENT_ID_DE_GOOGLE') {
-            mostrarToast('⚠️ Google Drive no configurado. Solo copia local.', 'info');
-            return;
-        }
-
-        if (!gapiInicializado) {
-            iniciarGapi();
-            setTimeout(() => {
-                if (gapiInicializado) {
-                    realizarBackup(true);
-                } else {
-                    mostrarToast('⚠️ No se pudo conectar con Google Drive', 'error');
-                }
-            }, 2000);
-        } else {
-            realizarBackup(true);
-        }
-    }
-
-    function iniciarGapi() {
-        if (CLIENT_ID === 'TU_CLIENT_ID_DE_GOOGLE') return;
-
-        try {
-            gapi.load('client:auth2', () => {
-                gapi.client.init({
-                    apiKey: API_KEY,
-                    clientId: CLIENT_ID,
-                    scope: SCOPES,
-                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-                }).then(() => {
-                    gapiInicializado = true;
-                    const auth = gapi.auth2.getAuthInstance();
-                    if (!auth.isSignedIn.get()) {
-                        auth.signIn().then(() => {
-                            tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
-                            realizarBackup(false);
-                        }).catch(() => {});
-                    } else {
-                        tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
-                        realizarBackup(false);
-                    }
-                }).catch(() => {});
-            });
-        } catch(e) {}
-    }
-
-    function realizarBackup(mostrarNotificacion = false) {
-        guardarFechaBackup();
-
-        if (!gapiInicializado || !tokenAcceso) {
-            return;
-        }
-
-        try {
-            const data = JSON.stringify(libros, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
-            const fecha = new Date().toISOString().replace(/[:.]/g, '-');
-            const nombreArchivo = `backup_${fecha}.json`;
-
-            buscarOCrearCarpeta().then(carpetaId => {
-                const metadata = { name: nombreArchivo, parents: [carpetaId], mimeType: 'application/json' };
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', blob);
-
-                fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${tokenAcceso}` },
-                    body: form
-                }).then(res => res.json())
-                  .then(data => {
-                      if (data.id && mostrarNotificacion) {
-                          mostrarToast('☁️ Backup guardado en Google Drive', 'success');
-                      }
-                  }).catch(() => {});
-            }).catch(() => {});
-        } catch(e) {}
-    }
-
-    function buscarOCrearCarpeta() {
-        return new Promise((resolve, reject) => {
-            fetch(`https://www.googleapis.com/drive/v3/files?q=name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`, {
-                headers: { 'Authorization': `Bearer ${tokenAcceso}` }
-            }).then(res => res.json())
-              .then(data => {
-                  if (data.files && data.files.length > 0) {
-                      resolve(data.files[0].id);
-                  } else {
-                      const metadata = { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' };
-                      fetch('https://www.googleapis.com/drive/v3/files', {
-                          method: 'POST',
-                          headers: {
-                              'Authorization': `Bearer ${tokenAcceso}`,
-                              'Content-Type': 'application/json'
-                          },
-                          body: JSON.stringify(metadata)
-                      }).then(res => res.json())
-                        .then(data => {
-                            if (data.id) resolve(data.id);
-                            else reject();
-                        }).catch(reject);
-                  }
-              }).catch(reject);
-        });
     }
 
     // ============================================================
@@ -1928,8 +2602,10 @@ TOAST NOTIFICACIONES
                     const json = XLSX.utils.sheet_to_json(sheet);
 
                     const nuevosLibros = json.map(row => ({
-                        id: row['Nº'] || row['N°'] || Date.now() + Math.random() * 1000,
+                        id: row['Nº Inventario'] || row['Nº'] || row['N°'] || Date.now() + Math.random() * 1000,
+                        numero: row['Número'] || '',
                         titulo: row['TÍTULO'] || row['Título'] || '',
+                        autor: row['AUTOR'] || row['Autor'] || '',
                         editorial: row['EDITORIAL'] || row['Editorial'] || '',
                         ciudad: row['CIUDAD'] || row['Ciudad'] || '',
                         anio: row['AÑO'] || row['Año'] || '',
@@ -1947,7 +2623,10 @@ TOAST NOTIFICACIONES
                         actualizarEstadisticas();
                         cargarFiltros();
                         mostrarToast(`✅ Importados ${nuevosLibros.length} libros desde Excel`, 'success');
-                        realizarBackup(false);
+                        
+                        if (tokenAcceso) {
+                            realizarBackup(false);
+                        }
                     }
                 } catch(err) {
                     mostrarToast('❌ Error al importar: ' + err.message, 'error');
@@ -1971,7 +2650,7 @@ TOAST NOTIFICACIONES
         if (!procedencia) return '';
         if (procedencia.includes('Cañizo')) return 'canizo';
         if (procedencia.includes('Patronato')) return 'patronato';
-        if (procedencia.includes('Amalia') || procedencia.includes('Jorge')) return 'amalia';
+        if (procedencia.includes('Amigos')) return 'amigos';
         return '';
     }
 
@@ -1993,7 +2672,7 @@ TOAST NOTIFICACIONES
             toast.style.transform = 'translateX(100px)';
             toast.style.transition = 'all 0.3s ease';
             setTimeout(() => toast.remove(), 300);
-        }, 3500);
+        }, 4000);
     }
 </script>
 </body>
