@@ -17,7 +17,7 @@
     
     <style>
         /* ============================================
-                   ESTILOS COMPLETOS (Mismos que antes)
+                   ESTILOS COMPLETOS
                    ============================================ */
         * {
             margin: 0;
@@ -1333,6 +1333,11 @@ TOAST
     const EMAILJS_SERVICE_ID = 'service_fyugdmi';
     const EMAILJS_TEMPLATE_ID = 'template_55bjozo';
 
+    // ============================================================
+    //  ✅ EMAIL DEL REMITENTE - YA CONFIGURADO
+    //  ============================================================
+    const EMAIL_REMITENTE = 'bibliotecajbhmalaga@gmail.com';
+
     emailjs.init(EMAILJS_PUBLIC_KEY);
 
     // ============================================================
@@ -1580,12 +1585,10 @@ TOAST
 
     function iniciarVerificacionEmails() {
         if (intervaloEmails) clearInterval(intervaloEmails);
-        // Verificar cada 6 horas (21600000 ms) - o cada 1 hora para pruebas
         intervaloEmails = setInterval(() => {
             verificarYEnviarEmailsAutomaticos();
-        }, 3600000); // 1 hora para pruebas (cambiar a 21600000 para producción)
+        }, 3600000); // 1 hora
         
-        // También ejecutar al cargar
         setTimeout(() => verificarYEnviarEmailsAutomaticos(), 5000);
     }
 
@@ -1600,7 +1603,6 @@ TOAST
             const fechaPrestamo = new Date(prestamo.fechaPrestamo);
             const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
             
-            // Día 30: primer aviso
             if (diffDias === 30 && !emailYaEnviado(prestamo.id, 'dia30')) {
                 await enviarEmailRecordatorio(prestamo.id, 'dia30');
                 registrarEmailEnviado(prestamo.id, 'dia30');
@@ -1608,7 +1610,6 @@ TOAST
                 mostrarToast(`📧 Email automático (día 30) enviado a ${prestamo.socio}`, 'info');
             }
             
-            // Día 45: segundo aviso
             if (diffDias === 45 && !emailYaEnviado(prestamo.id, 'dia45')) {
                 await enviarEmailRecordatorio(prestamo.id, 'dia45');
                 registrarEmailEnviado(prestamo.id, 'dia45');
@@ -1616,7 +1617,6 @@ TOAST
                 mostrarToast(`📧 Email automático (día 45) enviado a ${prestamo.socio}`, 'info');
             }
             
-            // Día 60: tercer aviso
             if (diffDias === 60 && !emailYaEnviado(prestamo.id, 'dia60')) {
                 await enviarEmailRecordatorio(prestamo.id, 'dia60');
                 registrarEmailEnviado(prestamo.id, 'dia60');
@@ -1624,7 +1624,6 @@ TOAST
                 mostrarToast(`📧 Email automático (día 60) enviado a ${prestamo.socio}`, 'info');
             }
             
-            // Cada 15 días después del día 60
             if (diffDias > 60 && diffDias % 15 === 0) {
                 const tipo = `dia${diffDias}`;
                 if (!emailYaEnviado(prestamo.id, tipo)) {
@@ -1642,14 +1641,14 @@ TOAST
     }
 
     // ============================================================
-    //  ENVIAR EMAIL DE RECORDATORIO (Mejorado)
+    //  ENVIAR EMAIL DE RECORDATORIO (CON REMITENTE CONFIGURADO)
     // ============================================================
 
     async function enviarEmailRecordatorio(prestamoId, tipo = 'manual') {
         const prestamo = prestamos.find(p => p.id == prestamoId);
         if (!prestamo) {
             console.log('❌ Préstamo no encontrado');
-            return;
+            return false;
         }
 
         const libro = getLibroById(prestamo.libroId);
@@ -1657,7 +1656,6 @@ TOAST
         const fechaPrestamo = new Date(prestamo.fechaPrestamo);
         const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
 
-        // Mensaje según el tipo de aviso
         let mensajePersonalizado = '';
         let asuntoPersonalizado = '';
         
@@ -1684,11 +1682,13 @@ TOAST
                 fecha_prestamo: new Date(prestamo.fechaPrestamo).toLocaleDateString('es-ES'),
                 biblioteca: 'Biblioteca La Concepción',
                 mensaje: mensajePersonalizado,
-                asunto: asuntoPersonalizado
+                asunto: asuntoPersonalizado,
+                // ✅ REMITENTE CONFIGURADO
+                from_email: EMAIL_REMITENTE
             };
 
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-            console.log(`✅ Email enviado a ${prestamo.email} (${tipo})`);
+            const result = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+            console.log(`✅ Email enviado a ${prestamo.email} (${tipo})`, result);
             return true;
         } catch (error) {
             console.error('❌ Error al enviar email:', error);
@@ -1701,6 +1701,7 @@ TOAST
     // ============================================================
 
     async function enviarEmailManual(prestamoId) {
+        console.log('📧 Enviando email manual para préstamo:', prestamoId);
         const success = await enviarEmailRecordatorio(prestamoId, 'manual');
         if (success) {
             registrarEmailEnviado(prestamoId, 'manual');
@@ -2607,7 +2608,6 @@ TOAST
                 const estadoTexto = p.estado === 'devuelto' ? '✅ Devuelto' :
                                    p.estado === 'retrasado' ? '🔴 Retrasado' : '🟢 Activo';
 
-                // Verificar si se ha enviado email
                 const emailEnviado = emailYaEnviado(p.id, 'manual') || 
                                     emailYaEnviado(p.id, 'dia30') ||
                                     emailYaEnviado(p.id, 'dia45') ||
