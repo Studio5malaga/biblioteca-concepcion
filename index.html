@@ -603,6 +603,16 @@
             color: #92400e;
         }
 
+        .badge-sin-email {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.55rem;
+            font-weight: 600;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
         .btn-accion {
             padding: 2px 6px;
             border: none;
@@ -623,6 +633,8 @@
         .btn-accion.email-enviado { background: #fef3c7; color: #92400e; cursor: default; }
         .btn-accion.prestar { background: #fef3c7; color: #92400e; }
         .btn-accion.prestar:hover { background: #fde68a; }
+        .btn-accion.editar-email { background: #fef3c7; color: #92400e; }
+        .btn-accion.editar-email:hover { background: #fde68a; }
 
         /* ============================================================
                    MODAL
@@ -984,7 +996,6 @@ CONTENIDO PRINCIPAL
     PESTAÑA: LIBROS
     ============================================================ -->
     <div class="tab-content active" id="tabLibros">
-        <!-- Estadísticas -->
         <div class="stats">
             <div class="stat-card">
                 <div class="number" id="totalLibros">0</div>
@@ -1004,7 +1015,6 @@ CONTENIDO PRINCIPAL
             </div>
         </div>
 
-        <!-- Búsqueda -->
         <section class="search-section">
             <input type="text" id="searchInput" placeholder="🔍 Buscar por título, autor, editorial..." oninput="renderizarTabla()">
             <div class="filters">
@@ -1022,7 +1032,6 @@ CONTENIDO PRINCIPAL
             <button class="btn btn-success" onclick="abrirModal()">➕ Nuevo Libro</button>
         </section>
 
-        <!-- Tabla de libros -->
         <div class="table-container">
             <table>
                 <thead>
@@ -1053,7 +1062,6 @@ CONTENIDO PRINCIPAL
     PESTAÑA: PRÉSTAMOS
     ============================================================ -->
     <div class="tab-content" id="tabPrestamos">
-        <!-- Estadísticas de préstamos -->
         <div class="stats">
             <div class="stat-card">
                 <div class="number" id="totalPrestamos">0</div>
@@ -1073,7 +1081,6 @@ CONTENIDO PRINCIPAL
             </div>
         </div>
 
-        <!-- Búsqueda de préstamos -->
         <section class="search-section">
             <input type="text" id="searchPrestamos" placeholder="🔍 Buscar por socio, libro o email..." oninput="renderizarPrestamos()">
             <div class="filters">
@@ -1088,7 +1095,6 @@ CONTENIDO PRINCIPAL
             <button class="btn btn-warning" onclick="limpiarFiltrosPrestamos()">🔄 Limpiar</button>
         </section>
 
-        <!-- Tabla de préstamos -->
         <div class="table-container">
             <table>
                 <thead>
@@ -1305,6 +1311,41 @@ MODAL: NUEVO PRÉSTAMO
 </div>
 
 <!-- ============================================================
+MODAL: EDITAR EMAIL DEL PRÉSTAMO
+============================================================ -->
+<div class="modal" id="modalEditarEmail">
+    <div class="modal-content">
+        <h2>
+            <span id="modalEditarEmailTitulo">✏️ Editar Email del Socio</span>
+            <button class="close" onclick="cerrarModalEditarEmail()">&times;</button>
+        </h2>
+        <form id="editarEmailForm" onsubmit="guardarEditarEmail(event)">
+            <input type="hidden" id="editEmailPrestamoId" value="">
+            
+            <div class="form-group">
+                <label>Socio</label>
+                <input type="text" id="editEmailSocio" disabled style="background:#f7fafc;">
+            </div>
+            
+            <div class="form-group">
+                <label>Email del socio *</label>
+                <input type="email" id="editEmailInput" required placeholder="email@socio.com">
+            </div>
+
+            <div class="form-group">
+                <label>Teléfono / WhatsApp</label>
+                <input type="text" id="editEmailTelefono" placeholder="+34 600 000 000">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-danger" onclick="cerrarModalEditarEmail()">Cancelar</button>
+                <button type="submit" class="btn btn-success" id="btnGuardarEditarEmail">💾 Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================
 TOAST
 ============================================================ -->
 <div class="toast-container" id="toastContainer"></div>
@@ -1334,7 +1375,6 @@ TOAST
     const EMAILJS_TEMPLATE_ID = 'template_55bjozo';
     const EMAIL_REMITENTE = 'bibliotecajbhmalaga@gmail.com';
 
-    // Inicializar EmailJS
     emailjs.init(EMAILJS_PUBLIC_KEY);
     console.log('📧 EmailJS inicializado con Public Key:', EMAILJS_PUBLIC_KEY);
 
@@ -1377,6 +1417,7 @@ TOAST
         if (e.key === 'Escape') {
             cerrarModal();
             cerrarModalPrestamo();
+            cerrarModalEditarEmail();
         }
     });
 
@@ -1429,7 +1470,7 @@ TOAST
     }
 
     // ============================================================
-    //  FUNCIONES DE AUTENTICACIÓN
+    //  FUNCIONES DE AUTENTICACIÓN (resumidas)
     // ============================================================
 
     async function loginWithEmail(event) {
@@ -1578,7 +1619,7 @@ TOAST
     }
 
     // ============================================================
-    //  ⭐ FUNCIÓN DE ENVÍO DE EMAIL CON DEPURACIÓN MEJORADA
+    //  ENVIAR EMAIL DE RECORDATORIO CON VERIFICACIÓN DE EMAIL
     // ============================================================
 
     async function enviarEmailRecordatorio(prestamoId, tipo = 'manual') {
@@ -1594,6 +1635,13 @@ TOAST
         }
 
         console.log('📧 Socio:', prestamo.socio, 'Email:', prestamo.email);
+
+        // ✅ VERIFICACIÓN: Si no tiene email, mostrar error y sugerir editar
+        if (!prestamo.email || prestamo.email.trim() === '') {
+            console.log('❌ El préstamo no tiene email');
+            mostrarToast('❌ El socio no tiene email. Usa el botón ✏️📧 para añadirlo.', 'error');
+            return false;
+        }
 
         const libro = getLibroById(prestamo.libroId);
         const hoy = new Date();
@@ -1658,6 +1706,77 @@ TOAST
     }
 
     // ============================================================
+    //  FUNCIÓN MANUAL PARA ENVIAR EMAIL
+    // ============================================================
+
+    async function enviarEmailManual(prestamoId) {
+        console.log('📧 Enviando email manual para préstamo:', prestamoId);
+        const success = await enviarEmailRecordatorio(prestamoId, 'manual');
+        if (success) {
+            registrarEmailEnviado(prestamoId, 'manual');
+            renderizarPrestamos();
+        }
+    }
+
+    // ============================================================
+    //  MODAL PARA EDITAR EMAIL DEL SOCIO
+    // ============================================================
+
+    function abrirModalEditarEmail(prestamoId) {
+        const prestamo = prestamos.find(p => p.id == prestamoId);
+        if (!prestamo) {
+            mostrarToast('❌ Préstamo no encontrado', 'error');
+            return;
+        }
+
+        document.getElementById('modalEditarEmailTitulo').textContent = `✏️ Editar datos de "${prestamo.socio}"`;
+        document.getElementById('editEmailPrestamoId').value = prestamoId;
+        document.getElementById('editEmailSocio').value = prestamo.socio;
+        document.getElementById('editEmailInput').value = prestamo.email || '';
+        document.getElementById('editEmailTelefono').value = prestamo.telefono || '';
+
+        document.getElementById('modalEditarEmail').classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('editEmailInput').focus(), 100);
+    }
+
+    function cerrarModalEditarEmail() {
+        document.getElementById('modalEditarEmail').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function guardarEditarEmail(e) {
+        e.preventDefault();
+
+        const prestamoId = document.getElementById('editEmailPrestamoId').value;
+        const nuevoEmail = document.getElementById('editEmailInput').value.trim();
+        const nuevoTelefono = document.getElementById('editEmailTelefono').value.trim();
+
+        if (!nuevoEmail) {
+            mostrarToast('❌ El email es obligatorio', 'error');
+            return;
+        }
+
+        const prestamo = prestamos.find(p => p.id == prestamoId);
+        if (!prestamo) {
+            mostrarToast('❌ Préstamo no encontrado', 'error');
+            return;
+        }
+
+        prestamo.email = nuevoEmail;
+        prestamo.telefono = nuevoTelefono || prestamo.telefono || '';
+
+        guardarPrestamos();
+        cerrarModalEditarEmail();
+        renderizarPrestamos();
+        mostrarToast(`✅ Email actualizado para "${prestamo.socio}"`, 'success');
+        
+        if (tokenAcceso) {
+            realizarBackup(false);
+        }
+    }
+
+    // ============================================================
     //  VERIFICACIÓN AUTOMÁTICA DE EMAILS
     // ============================================================
 
@@ -1676,6 +1795,12 @@ TOAST
 
         for (const prestamo of prestamos) {
             if (prestamo.estado === 'devuelto') continue;
+            
+            // ✅ Saltar préstamos sin email
+            if (!prestamo.email || prestamo.email.trim() === '') {
+                console.log(`⚠️ Préstamo ${prestamo.id} sin email, saltando...`);
+                continue;
+            }
             
             const fechaPrestamo = new Date(prestamo.fechaPrestamo);
             const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
@@ -1706,27 +1831,7 @@ TOAST
     }
 
     // ============================================================
-    //  FUNCIÓN MANUAL PARA ENVIAR EMAIL (desde la interfaz)
-    // ============================================================
-
-    async function enviarEmailManual(prestamoId) {
-        console.log('📧 Enviando email manual para préstamo:', prestamoId);
-        const success = await enviarEmailRecordatorio(prestamoId, 'manual');
-        if (success) {
-            registrarEmailEnviado(prestamoId, 'manual');
-            renderizarPrestamos();
-        }
-    }
-
-    // ============================================================
-    //  GOOGLE DRIVE - BACKUP EN LA NUBE (RESTO DEL CÓDIGO)
-    //  ============================================================
-    // [El resto del código de Google Drive, gestión de libros, préstamos,
-    //  renderizado de tablas, etc. permanece igual que en la versión anterior]
-    // 
-    // NOTA: Para mantener la respuesta manejable, el resto del código
-    // es idéntico a la versión anterior. La modificación clave está en
-    // la función enviarEmailRecordatorio con la depuración mejorada.
+    //  GOOGLE DRIVE - BACKUP
     // ============================================================
 
     function iniciarGapi() {
@@ -1930,7 +2035,7 @@ TOAST
     }
 
     // ============================================================
-    //  GESTIÓN DE LIBROS
+    //  GESTIÓN DE LIBROS (resumido)
     // ============================================================
 
     function cargarLibros() {
@@ -2015,12 +2120,7 @@ TOAST
     }
 
     // ============================================================
-    //  GESTIÓN DE PRÉSTAMOS (RESTO DEL CÓDIGO)
-    //  ============================================================
-    // [El resto del código de gestión de préstamos, renderizado de tablas,
-    //  CRUD, exportación, etc. permanece igual]
-    //  Para mantener la respuesta manejable, el resto es idéntico.
-    //  La modificación clave está en enviarEmailRecordatorio con depuración.
+    //  GESTIÓN DE PRÉSTAMOS
     // ============================================================
 
     function cargarPrestamos() {
@@ -2082,7 +2182,8 @@ TOAST
                     email: p.email,
                     telefono: p.telefono,
                     prestamoId: p.id,
-                    dias: diffDias
+                    dias: diffDias,
+                    sinEmail: !p.email || p.email.trim() === ''
                 });
             }
         });
@@ -2116,7 +2217,7 @@ TOAST
                                 <div>
                                     <div style="font-weight:600;">${a.mensaje}</div>
                                     <div style="font-size:0.85rem;color:#4a5568;margin-top:4px;">
-                                        👤 ${a.socio} · 📧 ${a.email}
+                                        👤 ${a.socio} · ${a.sinEmail ? '⚠️ <strong>Sin email</strong>' : `📧 ${a.email}`}
                                         ${a.telefono ? ` · 📱 ${a.telefono}` : ''}
                                     </div>
                                     <div style="font-size:0.8rem;color:#e53e3e;margin-top:2px;">
@@ -2125,12 +2226,11 @@ TOAST
                                     </div>
                                 </div>
                                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                    <button class="btn btn-sm btn-info" onclick="enviarEmailManual('${a.prestamoId}')">
-                                        📧 Email
-                                    </button>
-                                    <button class="btn btn-sm btn-success" onclick="devolverPrestamo('${a.prestamoId}')">
-                                        ✅ Devolver
-                                    </button>
+                                    ${a.sinEmail ? 
+                                        `<button class="btn btn-sm btn-warning" onclick="abrirModalEditarEmail('${a.prestamoId}')">✏️📧 Añadir email</button>` :
+                                        `<button class="btn btn-sm btn-info" onclick="enviarEmailManual('${a.prestamoId}')">📧 Email</button>`
+                                    }
+                                    <button class="btn btn-sm btn-success" onclick="devolverPrestamo('${a.prestamoId}')">✅ Devolver</button>
                                 </div>
                             </div>
                         </div>
@@ -2147,6 +2247,10 @@ TOAST
         }, 60000);
     }
 
+    // ============================================================
+    //  ACTUALIZAR BADGES
+    // ============================================================
+
     function actualizarBadges() {
         const activos = prestamos.filter(p => p.estado === 'activo' || p.estado === 'retrasado');
         const badgePrestamos = document.getElementById('prestamosBadge');
@@ -2158,6 +2262,10 @@ TOAST
         }
         actualizarAlertas();
     }
+
+    // ============================================================
+    //  ESTADÍSTICAS
+    // ============================================================
 
     function actualizarEstadisticas() {
         document.getElementById('totalLibros').textContent = libros.length;
@@ -2342,7 +2450,7 @@ TOAST
     }
 
     // ============================================================
-    //  CRUD DE LIBROS
+    //  CRUD DE LIBROS (resumido)
     // ============================================================
 
     function abrirModal(libro = null) {
@@ -2623,12 +2731,14 @@ TOAST
                                     emailYaEnviado(p.id, 'dia45') ||
                                     emailYaEnviado(p.id, 'dia60');
 
+                const tieneEmail = p.email && p.email.trim() !== '';
+
                 return `
                 <tr>
                     <td><strong>${p.id.substring(0, 8)}</strong></td>
                     <td style="max-width:200px;word-wrap:break-word;">${libro ? escapeHTML(libro.titulo) : '⚠️ Libro eliminado'}</td>
                     <td>${escapeHTML(p.socio)}</td>
-                    <td style="font-size:0.75rem;">${escapeHTML(p.email)}</td>
+                    <td style="font-size:0.75rem;">${tieneEmail ? escapeHTML(p.email) : '<span class="badge-sin-email">⚠️ Sin email</span>'}</td>
                     <td>${p.telefono ? escapeHTML(p.telefono) : '-'}</td>
                     <td style="font-size:0.75rem;">${new Date(p.fechaPrestamo).toLocaleDateString('es-ES')}</td>
                     <td style="font-size:0.75rem;">${p.fechaDevolucion ? new Date(p.fechaDevolucion).toLocaleDateString('es-ES') : '-'}</td>
@@ -2641,8 +2751,9 @@ TOAST
                     </td>
                     <td>
                         ${p.estado !== 'devuelto' ? `
+                            <button class="btn-accion editar-email" onclick="abrirModalEditarEmail('${p.id}')" title="Editar email del socio">✏️📧</button>
                             <button class="btn-accion devolver" onclick="devolverPrestamo('${p.id}')" title="Marcar como devuelto">✅</button>
-                            <button class="btn-accion email" onclick="enviarEmailManual('${p.id}')" title="Enviar recordatorio">📧</button>
+                            ${tieneEmail ? `<button class="btn-accion email" onclick="enviarEmailManual('${p.id}')" title="Enviar recordatorio">📧</button>` : ''}
                         ` : ''}
                         <button class="btn-accion eliminar" onclick="eliminarPrestamo('${p.id}')" title="Eliminar">🗑️</button>
                     </td>
@@ -2761,7 +2872,7 @@ TOAST
                     'ID': p.id,
                     'Libro': libro ? libro.titulo : 'Eliminado',
                     'Socio': p.socio,
-                    'Email': p.email,
+                    'Email': p.email || '',
                     'Teléfono': p.telefono || '',
                     'Fecha Préstamo': p.fechaPrestamo,
                     'Fecha Devolución': p.fechaDevolucion || '',
