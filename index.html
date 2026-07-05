@@ -1,1242 +1,1015 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biblioteca La Concepción - Gestor</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; color: #1a202c; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
-        .container { max-width: 1400px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
-        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a3a0a 0%, #2d5016 40%, #4a7c2a 100%); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease; }
-        .login-overlay.hidden { opacity: 0; pointer-events: none; }
-        .login-box { background: white; padding: 40px 45px; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-width: 420px; width: 100%; text-align: center; animation: fadeInUp 0.6s ease; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .login-box .logo { font-size: 3rem; margin-bottom: 10px; }
-        .login-box h2 { color: #2d5016; font-size: 1.5rem; margin-bottom: 6px; }
-        .login-box .subtitle { color: #718096; font-size: 0.9rem; margin-bottom: 25px; }
-        .login-box .error-msg { color: #e53e3e; font-size: 0.85rem; background: #fff5f5; padding: 8px 12px; border-radius: 8px; margin-bottom: 15px; display: none; }
-        .login-box .error-msg.visible { display: block; }
-        .login-box .success-msg { color: #38a169; font-size: 0.85rem; background: #f0fff4; padding: 8px 12px; border-radius: 8px; margin-bottom: 15px; display: none; }
-        .login-box .success-msg.visible { display: block; }
-        .login-box .form-group { margin-bottom: 18px; text-align: left; }
-        .login-box .form-group label { display: block; font-weight: 600; font-size: 0.85rem; color: #4a5568; margin-bottom: 5px; }
-        .login-box .form-group input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; transition: border-color 0.3s ease; }
-        .login-box .form-group input:focus { outline: none; border-color: #4a7c2a; box-shadow: 0 0 0 3px rgba(74,124,42,0.1); }
-        .login-box .btn-login { width: 100%; padding: 12px; background: #2d5016; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; }
-        .login-box .btn-login:hover { background: #4a7c2a; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(45,80,22,0.3); }
-        .login-box .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .login-box .btn-google { width: 100%; padding: 12px; margin-top: 10px; background: white; color: #4a5568; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .login-box .btn-google:hover { background: #f7fafc; border-color: #2d5016; transform: translateY(-2px); }
-        .login-box .btn-google:disabled { opacity: 0.5; cursor: not-allowed; }
-        .login-box .divider { display: flex; align-items: center; margin: 18px 0; color: #a0aec0; font-size: 0.85rem; }
-        .login-box .divider::before, .login-box .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
-        .login-box .divider::before { margin-right: 12px; }
-        .login-box .divider::after { margin-left: 12px; }
-        .login-box .forgot-password { display: block; text-align: right; margin-top: -10px; margin-bottom: 15px; font-size: 0.8rem; color: #3182ce; cursor: pointer; background: none; border: none; }
-        .login-box .forgot-password:hover { text-decoration: underline; }
-        .login-box .footer-text { margin-top: 16px; font-size: 0.8rem; color: #4a5568; line-height: 1.5; }
-        .login-box .footer-text .contact-link { color: #3182ce; text-decoration: none; font-weight: 600; cursor: pointer; }
-        .login-box .footer-text .contact-link:hover { text-decoration: underline; }
-        .header { background: #2d5016; border-radius: 16px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 4px 20px rgba(45,80,22,0.3); }
-        .header-banner { width: 100%; display: flex; justify-content: center; align-items: center; background: #2d5016; padding: 0; }
-        .header-banner img { width: 100%; height: auto; display: block; background: #2d5016; object-fit: contain; }
-        .header-banner .fallback-text { display: none; width: 100%; padding: 40px 20px; text-align: center; color: white; font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg,#2d5016,#4a7c2a); letter-spacing: 2px; }
-        .header-banner img.error + .fallback-text { display: block; }
-        .header-toolbar { background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); padding: 10px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .header-toolbar .left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .header-toolbar .title { display: flex; align-items: center; gap: 6px; color: white; font-size: 1rem; font-weight: 600; }
-        .header-toolbar .title span { font-weight: 300; font-size: 0.7rem; opacity: 0.7; }
-        .header-toolbar .title .user-email { font-weight: 400; font-size: 0.7rem; opacity: 0.6; background: rgba(255,255,255,0.1); padding: 2px 10px; border-radius: 12px; }
-        .header-toolbar .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .btn-logout { background: rgba(255,255,255,0.15); color: white; border: 1.5px solid rgba(255,255,255,0.2); }
-        .btn-logout:hover { background: rgba(229,62,62,0.6); border-color: #e53e3e; transform: translateY(-2px); }
-        .backup-indicator { display: flex; align-items: center; gap: 5px; font-size: 0.65rem; color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.25); padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
-        .backup-indicator .estado { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #68d391; animation: pulse 2s infinite; }
-        .backup-indicator .estado.error { background: #fc8181; animation: none; }
-        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-        .btn { padding: 6px 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; white-space: nowrap; }
-        .btn-primary { background: #ffffff; color: #2d5016; }
-        .btn-primary:hover { background: #e8f5e0; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .btn-success { background: #38a169; color: white; }
-        .btn-success:hover { background: #2f855a; transform: translateY(-2px); }
-        .btn-danger { background: #e53e3e; color: white; }
-        .btn-danger:hover { background: #c53030; transform: translateY(-2px); }
-        .btn-warning { background: #ed8936; color: white; }
-        .btn-warning:hover { background: #dd6b20; transform: translateY(-2px); }
-        .btn-info { background: #3182ce; color: white; }
-        .btn-info:hover { background: #2b6cb0; transform: translateY(-2px); }
-        .btn-outline { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.3); }
-        .btn-outline:hover { background: rgba(255,255,255,0.1); border-color: white; transform: translateY(-2px); }
-        .btn-backup { background: #dd6b20; color: white; border: 1.5px solid rgba(255,255,255,0.2); }
-        .btn-backup:hover { background: #ed8936; transform: translateY(-2px); }
-        .btn-sm { padding: 3px 8px; font-size: 0.65rem; }
-        .tabs { display: flex; gap: 4px; background: white; padding: 6px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-wrap: wrap; }
-        .tab-btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; background: transparent; color: #4a5568; flex: 1; min-width: 120px; text-align: center; }
-        .tab-btn:hover { background: #f0f4f8; }
-        .tab-btn.active { background: #2d5016; color: white; box-shadow: 0 2px 10px rgba(45,80,22,0.3); }
-        .tab-btn .badge-tab { background: #e53e3e; color: white; border-radius: 50%; padding: 1px 7px; font-size: 0.65rem; margin-left: 4px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .search-section { background: white; padding: 16px 20px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .search-section input, .search-section select { padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem; flex: 1; min-width: 140px; transition: border-color 0.3s ease; }
-        .search-section input:focus, .search-section select:focus { outline: none; border-color: #4a7c2a; box-shadow: 0 0 0 3px rgba(74,124,42,0.1); }
-        .search-section .filters { display: flex; gap: 8px; flex-wrap: wrap; flex: 2; }
-        .search-section .filters select { flex: 1; min-width: 100px; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 10px 14px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; }
-        .stat-card .number { font-size: 1.5rem; font-weight: 700; color: #2d5016; }
-        .stat-card .label { font-size: 0.7rem; color: #718096; margin-top: 2px; }
-        .table-container { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        thead { background: #f7fafc; border-bottom: 2px solid #e2e8f0; }
-        th { padding: 8px 10px; text-align: left; font-weight: 600; color: #4a5568; white-space: nowrap; position: sticky; top: 0; background: #f7fafc; z-index: 10; }
-        td { padding: 6px 10px; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
-        tr:hover { background: #f7fafc; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; }
-        .badge-es { background: #e8f5e0; color: #2d5016; }
-        .badge-en { background: #e0f2fe; color: #0369a1; }
-        .badge-fr { background: #fce4ec; color: #c62828; }
-        .badge-it { background: #fef3c7; color: #92400e; }
-        .badge-ca { background: #fce4ec; color: #7b1fa2; }
-        .badge-pt { background: #e0f7fa; color: #00695c; }
-        .badge-procedencia { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; background: #e2e8f0; color: #4a5568; }
-        .badge-procedencia.canizo { background: #dbeafe; color: #1e40af; }
-        .badge-procedencia.patronato { background: #d1fae5; color: #065f46; }
-        .badge-procedencia.amigos { background: #fce7f3; color: #9d174d; }
-        .badge-estado { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; }
-        .badge-estado.activo { background: #dbeafe; color: #1e40af; }
-        .badge-estado.devuelto { background: #d1fae5; color: #065f46; }
-        .badge-estado.retrasado { background: #fee2e2; color: #991b1b; animation: pulseAlert 1.5s infinite; }
-        @keyframes pulseAlert { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        .badge-email-enviado { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.55rem; font-weight: 600; background: #fef3c7; color: #92400e; }
-        .badge-sin-email { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.55rem; font-weight: 600; background: #fee2e2; color: #991b1b; }
-        .btn-accion { padding: 2px 6px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.6rem; margin: 0 2px; transition: all 0.2s; }
-        .btn-accion.editar { background: #dbeafe; color: #1e40af; }
-        .btn-accion.editar:hover { background: #bfdbfe; }
-        .btn-accion.eliminar { background: #fee2e2; color: #991b1b; }
-        .btn-accion.eliminar:hover { background: #fecaca; }
-        .btn-accion.devolver { background: #d1fae5; color: #065f46; }
-        .btn-accion.devolver:hover { background: #a7f3d0; }
-        .btn-accion.email { background: #e0f2fe; color: #0369a1; }
-        .btn-accion.email:hover { background: #bae6fd; }
-        .btn-accion.prestar { background: #fef3c7; color: #92400e; }
-        .btn-accion.prestar:hover { background: #fde68a; }
-        .btn-accion.editar-email { background: #fef3c7; color: #92400e; }
-        .btn-accion.editar-email:hover { background: #fde68a; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-        .modal.active { display: flex; }
-        .modal-content { background: white; padding: 20px 24px; border-radius: 18px; max-width: 750px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .modal-content h2 { margin-bottom: 14px; color: #2d5016; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
-        .modal-content .close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #a0aec0; transition: color 0.2s; }
-        .modal-content .close:hover { color: #e53e3e; }
-        .form-group { margin-bottom: 10px; }
-        .form-group label { display: block; font-weight: 600; font-size: 0.78rem; color: #4a5568; margin-bottom: 2px; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 7px 10px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem; transition: border-color 0.3s; font-family: inherit; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #4a7c2a; box-shadow: 0 0 0 3px rgba(74,124,42,0.1); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; padding-top: 10px; border-top: 2px solid #edf2f7; }
-        .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px; }
-        .pagination-bar .info { color: #718096; font-size: 0.78rem; }
-        .pagination-bar .controles { display: flex; gap: 3px; flex-wrap: wrap; }
-        .pagination-bar .controles .btn { min-width: 28px; justify-content: center; padding: 3px 8px; font-size: 0.7rem; }
-        .empty-state { text-align: center; padding: 35px 20px; color: #a0aec0; }
-        .empty-state .icon { font-size: 2.8rem; margin-bottom: 8px; }
-        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; }
-        .toast { padding: 8px 16px; border-radius: 12px; color: white; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; max-width: 340px; font-size: 0.8rem; }
-        .toast-success { background: #38a169; }
-        .toast-error { background: #e53e3e; }
-        .toast-info { background: #3182ce; }
-        .toast-warning { background: #ed8936; }
-        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .footer { margin-top: 30px; padding: 20px 0 10px 0; border-top: 2px solid #e2e8f0; text-align: center; color: #4a5568; font-size: 0.85rem; }
-        .footer .credits { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-        .footer .credits .heart { color: #e53e3e; font-size: 1.1rem; animation: heartbeat 1.5s ease-in-out infinite; }
-        @keyframes heartbeat { 0%,100% { transform: scale(1); } 14% { transform: scale(1.2); } 28% { transform: scale(1); } 42% { transform: scale(1.15); } 70% { transform: scale(1); } }
-        .footer .credits .studio-logo { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #2d5016; }
-        .footer .credits .studio-logo img { height: 28px; width: auto; display: inline-block; vertical-align: middle; border-radius: 4px; }
-        .footer .credits .studio-logo .text { font-weight: 700; color: #2d5016; }
-        .footer .credits .separator { color: #cbd5e0; font-weight: 300; }
-        .footer .credits .contact-link { color: #3182ce; text-decoration: none; font-weight: 600; transition: color 0.3s ease; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-        .footer .credits .contact-link:hover { color: #2b6cb0; text-decoration: underline; }
-        .footer .credits .contact-link svg { width: 16px; height: 16px; fill: currentColor; }
-        .footer .version { margin-top: 6px; font-size: 0.7rem; color: #a0aec0; }
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            .login-box { padding: 30px 24px; margin: 20px; }
-            .login-box .footer-text { font-size: 0.7rem; }
-            .header-toolbar .title { font-size: 0.85rem; }
-            .header-toolbar .actions .btn { font-size: 0.65rem; padding: 4px 8px; }
-            .search-section { flex-direction: column; padding: 10px 12px; }
-            .search-section input, .search-section select { width: 100%; min-width: unset; }
-            .search-section .filters { flex-direction: column; width: 100%; }
-            .search-section .filters select { width: 100%; }
-            .stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-            .stat-card { padding: 8px 10px; }
-            .stat-card .number { font-size: 1.2rem; }
-            .form-row { grid-template-columns: 1fr; }
-            .modal-content { padding: 14px; margin: 6px; }
-            table { font-size: 0.68rem; }
-            th, td { padding: 4px 5px; }
-            .footer .credits { flex-direction: column; gap: 6px; }
-            .footer .credits .separator { display: none; }
-            .header-toolbar .title .user-email { display: none; }
-            .tabs { flex-direction: column; }
-            .tab-btn { min-width: unset; padding: 8px 12px; font-size: 0.75rem; }
-        }
-        @media (max-width: 480px) {
-            .login-box { padding: 24px 18px; }
-            .login-box h2 { font-size: 1.2rem; }
-            .header-toolbar .actions .btn { font-size: 0.55rem; padding: 3px 6px; }
-            .stats { grid-template-columns: 1fr 1fr; gap: 4px; }
-            .stat-card .number { font-size: 1rem; }
-            .backup-indicator { font-size: 0.5rem; padding: 2px 5px; }
-            .footer .credits .studio-logo img { height: 20px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblioteca La Concepción</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://apis.google.com/js/api.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;padding:20px;min-height:100vh}.container{max-width:1400px;margin:0 auto}
+.login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a3a0a,#4a7c2a);display:flex;justify-content:center;align-items:center;z-index:9999;transition:opacity 0.5s}
+.login-overlay.hidden{opacity:0;pointer-events:none}
+.login-box{background:#fff;padding:40px;border-radius:24px;max-width:420px;width:100%;text-align:center}
+.login-box .logo{font-size:3rem}
+.login-box h2{color:#2d5016;font-size:1.5rem}
+.login-box .subtitle{color:#718096;font-size:.9rem;margin-bottom:25px}
+.login-box .error-msg{color:#e53e3e;background:#fff5f5;padding:8px;border-radius:8px;margin-bottom:15px;display:none}
+.login-box .error-msg.visible{display:block}
+.login-box .success-msg{color:#38a169;background:#f0fff4;padding:8px;border-radius:8px;margin-bottom:15px;display:none}
+.login-box .success-msg.visible{display:block}
+.login-box .form-group{margin-bottom:18px;text-align:left}
+.login-box .form-group label{display:block;font-weight:600;font-size:.85rem;color:#4a5568;margin-bottom:5px}
+.login-box .form-group input{width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem}
+.login-box .form-group input:focus{outline:none;border-color:#4a7c2a}
+.login-box .btn-login{width:100%;padding:12px;background:#2d5016;color:#fff;border:none;border-radius:12px;font-size:1.05rem;font-weight:700;cursor:pointer}
+.login-box .btn-login:hover{background:#4a7c2a}
+.login-box .btn-login:disabled{opacity:.5;cursor:not-allowed}
+.login-box .btn-google{width:100%;padding:12px;margin-top:10px;background:#fff;color:#4a5568;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+.login-box .btn-google:hover{background:#f7fafc;border-color:#2d5016}
+.login-box .divider{display:flex;align-items:center;margin:18px 0;color:#a0aec0}
+.login-box .divider::before,.login-box .divider::after{content:'';flex:1;border-bottom:1px solid #e2e8f0}
+.login-box .divider::before{margin-right:12px}
+.login-box .divider::after{margin-left:12px}
+.login-box .forgot-password{display:block;text-align:right;margin-top:-10px;margin-bottom:15px;font-size:.8rem;color:#3182ce;cursor:pointer;background:none;border:none}
+.login-box .forgot-password:hover{text-decoration:underline}
+.login-box .footer-text{margin-top:16px;font-size:.8rem;color:#4a5568}
+.login-box .footer-text .contact-link{color:#3182ce;cursor:pointer}
+.header{background:#2d5016;border-radius:16px;margin-bottom:25px;overflow:hidden}
+.header-banner{width:100%;display:flex;justify-content:center;background:#2d5016}
+.header-banner img{width:100%;height:auto;display:block;object-fit:contain;max-height:150px}
+.header-toolbar{background:rgba(255,255,255,0.08);padding:10px 20px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,0.1)}
+.header-toolbar .left{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header-toolbar .title{display:flex;align-items:center;gap:6px;color:#fff;font-size:1rem;font-weight:600}
+.header-toolbar .title span{font-weight:300;font-size:.7rem;opacity:.7}
+.header-toolbar .title .user-email{font-weight:400;font-size:.7rem;opacity:.6;background:rgba(255,255,255,0.1);padding:2px 10px;border-radius:12px}
+.header-toolbar .actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn-logout{background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.2)}
+.btn-logout:hover{background:rgba(229,62,62,0.6);border-color:#e53e3e}
+.backup-indicator{display:flex;align-items:center;gap:5px;font-size:.65rem;color:rgba(255,255,255,0.85);background:rgba(0,0,0,0.25);padding:3px 10px;border-radius:20px;white-space:nowrap}
+.backup-indicator .estado{display:inline-block;width:6px;height:6px;border-radius:50%;background:#68d391;animation:pulse 2s infinite}
+.backup-indicator .estado.error{background:#fc8181;animation:none}
+@keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
+.btn{padding:6px 12px;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all .3s;font-size:.75rem;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.btn-primary{background:#fff;color:#2d5016}
+.btn-primary:hover{background:#e8f5e0;transform:translateY(-2px)}
+.btn-success{background:#38a169;color:#fff}
+.btn-success:hover{background:#2f855a;transform:translateY(-2px)}
+.btn-danger{background:#e53e3e;color:#fff}
+.btn-danger:hover{background:#c53030;transform:translateY(-2px)}
+.btn-warning{background:#ed8936;color:#fff}
+.btn-warning:hover{background:#dd6b20;transform:translateY(-2px)}
+.btn-info{background:#3182ce;color:#fff}
+.btn-info:hover{background:#2b6cb0;transform:translateY(-2px)}
+.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,0.3)}
+.btn-outline:hover{background:rgba(255,255,255,0.1);border-color:#fff;transform:translateY(-2px)}
+.btn-backup{background:#dd6b20;color:#fff;border:1.5px solid rgba(255,255,255,0.2)}
+.btn-backup:hover{background:#ed8936;transform:translateY(-2px)}
+.btn-sm{padding:3px 8px;font-size:.65rem}
+.tabs{display:flex;gap:4px;background:#fff;padding:6px;border-radius:14px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:10px 20px;border:none;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .3s;background:transparent;color:#4a5568;flex:1;min-width:120px;text-align:center}
+.tab-btn:hover{background:#f0f4f8}
+.tab-btn.active{background:#2d5016;color:#fff}
+.tab-btn .badge-tab{background:#e53e3e;color:#fff;border-radius:50%;padding:1px 7px;font-size:.65rem;margin-left:4px}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.search-section{background:#fff;padding:16px 20px;border-radius:14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.search-section input,.search-section select{padding:8px 12px;border:2px solid #e2e8f0;border-radius:10px;font-size:.85rem;flex:1;min-width:140px}
+.search-section input:focus,.search-section select:focus{outline:none;border-color:#4a7c2a}
+.search-section .filters{display:flex;gap:8px;flex-wrap:wrap;flex:2}
+.search-section .filters select{flex:1;min-width:100px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px}
+.stat-card{background:#fff;padding:10px 14px;border-radius:12px;text-align:center}
+.stat-card .number{font-size:1.5rem;font-weight:700;color:#2d5016}
+.stat-card .label{font-size:.7rem;color:#718096}
+.table-container{background:#fff;border-radius:14px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead{background:#f7fafc;border-bottom:2px solid #e2e8f0}
+th{padding:8px 10px;text-align:left;font-weight:600;color:#4a5568;white-space:nowrap;position:sticky;top:0;background:#f7fafc;z-index:10}
+td{padding:6px 10px;border-bottom:1px solid #edf2f7;vertical-align:middle}
+tr:hover{background:#f7fafc}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.6rem;font-weight:600}
+.badge-es{background:#e8f5e0;color:#2d5016}
+.badge-en{background:#e0f2fe;color:#0369a1}
+.badge-fr{background:#fce4ec;color:#c62828}
+.badge-it{background:#fef3c7;color:#92400e}
+.badge-ca{background:#fce4ec;color:#7b1fa2}
+.badge-pt{background:#e0f7fa;color:#00695c}
+.badge-procedencia{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.6rem;font-weight:600;background:#e2e8f0;color:#4a5568}
+.badge-procedencia.canizo{background:#dbeafe;color:#1e40af}
+.badge-procedencia.patronato{background:#d1fae5;color:#065f46}
+.badge-procedencia.amigos{background:#fce7f3;color:#9d174d}
+.badge-estado{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.6rem;font-weight:600}
+.badge-estado.activo{background:#dbeafe;color:#1e40af}
+.badge-estado.devuelto{background:#d1fae5;color:#065f46}
+.badge-estado.retrasado{background:#fee2e2;color:#991b1b;animation:pulseAlert 1.5s infinite}
+@keyframes pulseAlert{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.badge-sin-email{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.55rem;font-weight:600;background:#fee2e2;color:#991b1b}
+.btn-accion{padding:2px 6px;border:none;border-radius:6px;cursor:pointer;font-size:.6rem;margin:0 2px}
+.btn-accion.editar{background:#dbeafe;color:#1e40af}
+.btn-accion.editar:hover{background:#bfdbfe}
+.btn-accion.eliminar{background:#fee2e2;color:#991b1b}
+.btn-accion.eliminar:hover{background:#fecaca}
+.btn-accion.devolver{background:#d1fae5;color:#065f46}
+.btn-accion.devolver:hover{background:#a7f3d0}
+.btn-accion.email{background:#e0f2fe;color:#0369a1}
+.btn-accion.email:hover{background:#bae6fd}
+.btn-accion.prestar{background:#fef3c7;color:#92400e}
+.btn-accion.prestar:hover{background:#fde68a}
+.btn-accion.editar-email{background:#fef3c7;color:#92400e}
+.btn-accion.editar-email:hover{background:#fde68a}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:1000;justify-content:center;align-items:center;padding:20px}
+.modal.active{display:flex}
+.modal-content{background:#fff;padding:20px 24px;border-radius:18px;max-width:750px;width:100%;max-height:90vh;overflow-y:auto;animation:slideUp .3s}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-content h2{margin-bottom:14px;color:#2d5016;font-size:1.2rem;display:flex;justify-content:space-between;align-items:center}
+.modal-content .close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#a0aec0}
+.modal-content .close:hover{color:#e53e3e}
+.form-group{margin-bottom:10px}
+.form-group label{display:block;font-weight:600;font-size:.78rem;color:#4a5568;margin-bottom:2px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:7px 10px;border:2px solid #e2e8f0;border-radius:10px;font-size:.85rem;font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#4a7c2a}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;padding-top:10px;border-top:2px solid #edf2f7}
+.pagination-bar{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px}
+.pagination-bar .info{color:#718096;font-size:.78rem}
+.pagination-bar .controles{display:flex;gap:3px;flex-wrap:wrap}
+.pagination-bar .controles .btn{min-width:28px;justify-content:center;padding:3px 8px;font-size:.7rem}
+.empty-state{text-align:center;padding:35px 20px;color:#a0aec0}
+.empty-state .icon{font-size:2.8rem;margin-bottom:8px}
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{padding:8px 16px;border-radius:12px;color:#fff;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.15);animation:slideIn .3s;max-width:340px;font-size:.8rem}
+.toast-success{background:#38a169}
+.toast-error{background:#e53e3e}
+.toast-info{background:#3182ce}
+.toast-warning{background:#ed8936}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+.footer{margin-top:30px;padding:20px 0 10px;border-top:2px solid #e2e8f0;text-align:center;color:#4a5568;font-size:.85rem}
+.footer .credits{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.footer .credits .heart{color:#e53e3e;font-size:1.1rem;animation:heartbeat 1.5s infinite}
+@keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.2)}28%{transform:scale(1)}42%{transform:scale(1.15)}70%{transform:scale(1)}}
+.footer .version{margin-top:6px;font-size:.7rem;color:#a0aec0}
+@media(max-width:768px){body{padding:10px}.login-box{padding:30px 24px;margin:20px}.header-toolbar .title{font-size:.85rem}.header-toolbar .actions .btn{font-size:.65rem;padding:4px 8px}.search-section{flex-direction:column;padding:10px 12px}.search-section input,.search-section select{width:100%;min-width:unset}.search-section .filters{flex-direction:column;width:100%}.search-section .filters select{width:100%}.stats{grid-template-columns:repeat(2,1fr);gap:6px}.stat-card{padding:8px 10px}.stat-card .number{font-size:1.2rem}.form-row{grid-template-columns:1fr}.modal-content{padding:14px;margin:6px}table{font-size:.68rem}th,td{padding:4px 5px}.footer .credits{flex-direction:column;gap:6px}.footer .credits .separator{display:none}.tabs{flex-direction:column}.tab-btn{min-width:unset;padding:8px 12px;font-size:.75rem}}
+@media(max-width:480px){.login-box{padding:24px 18px}.login-box h2{font-size:1.2rem}.header-toolbar .actions .btn{font-size:.55rem;padding:3px 6px}.stats{grid-template-columns:1fr 1fr;gap:4px}.stat-card .number{font-size:1rem}.backup-indicator{font-size:.5rem;padding:2px 5px}}
+</style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div class="login-overlay" id="loginOverlay">
-    <div class="login-box">
-        <div class="logo">🌿</div>
-        <h2>Biblioteca La Concepción</h2>
-        <p class="subtitle">Acceso al gestor bibliográfico</p>
-        <div class="error-msg" id="loginError">❌ Error al iniciar sesión. Inténtalo de nuevo.</div>
-        <div class="success-msg" id="loginSuccess">📧 Te hemos enviado un email para restablecer tu contraseña.</div>
-        <form id="loginForm" onsubmit="loginWithEmail(event)">
-            <div class="form-group"><label for="emailInput">📧 Email</label><input type="email" id="emailInput" placeholder="tu@email.com" required></div>
-            <div class="form-group"><label for="passwordInput">🔐 Contraseña</label><input type="password" id="passwordInput" placeholder="Introduce tu contraseña..." required></div>
-            <button type="button" class="forgot-password" onclick="resetPassword()">¿Olvidaste tu contraseña?</button>
-            <button type="submit" class="btn-login" id="btnLogin">📚 Iniciar sesión</button>
-        </form>
-        <div class="divider">o</div>
-        <button class="btn-google" onclick="loginWithGoogle()" id="btnGoogle">
-            <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-            Iniciar sesión con Google
-        </button>
-        <p class="footer-text">Acceso restringido a voluntarios y personal autorizado.<br>Si no tienes acceso, <a class="contact-link" onclick="enviarEmailContacto()">contacta con la biblioteca</a>.</p>
-    </div>
+<div class="login-box">
+<div class="logo">🌿</div>
+<h2>Biblioteca La Concepción</h2>
+<p class="subtitle">Acceso al gestor bibliográfico</p>
+<div class="error-msg" id="loginError">❌ Error al iniciar sesión.</div>
+<div class="success-msg" id="loginSuccess">📧 Email enviado.</div>
+<form id="loginForm" onsubmit="loginWithEmail(event)">
+<div class="form-group"><label>📧 Email</label><input type="email" id="emailInput" placeholder="tu@email.com" required></div>
+<div class="form-group"><label>🔐 Contraseña</label><input type="password" id="passwordInput" placeholder="Introduce tu contraseña..." required></div>
+<button type="button" class="forgot-password" onclick="resetPassword()">¿Olvidaste tu contraseña?</button>
+<button type="submit" class="btn-login" id="btnLogin">📚 Iniciar sesión</button>
+</form>
+<div class="divider">o</div>
+<button class="btn-google" onclick="loginWithGoogle()" id="btnGoogle">
+<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+Iniciar sesión con Google
+</button>
+<p class="footer-text">Acceso restringido a voluntarios y personal autorizado.<br>Si no tienes acceso, <a class="contact-link" onclick="enviarEmailContacto()">contacta con la biblioteca</a>.</p>
+</div>
 </div>
 
-<!-- CONTENIDO PRINCIPAL -->
+<!-- CONTENIDO -->
 <div class="container" id="mainContent" style="display:none;">
-    <header class="header">
-        <div class="header-banner"><img src="cabecera2.png" alt="Biblioteca José Antonio del Cañizo - Escuela" onerror="this.classList.add('error'); this.style.display='none'; this.nextElementSibling.style.display='block';"><div class="fallback-text">🌿 BIBLIOTECA JOSÉ ANTONIO DEL CAÑIZO<br><span style="font-size:1rem;font-weight:300;">Escuela · La Concepción</span></div></div>
-        <div class="header-toolbar">
-            <div class="left"><div class="title">🌿 La Concepción <span>Málaga · Gestor Bibliográfico</span><span class="user-email" id="userEmailDisplay"></span></div><div class="backup-indicator" id="backupIndicator"><span>☁️</span><span id="ultimaCopiaTexto">--:--</span><span class="estado" id="estadoBackup"></span></div></div>
-            <div class="actions"><button class="btn btn-logout" onclick="cerrarSesion()" title="Cerrar sesión">🚪 Salir</button><button class="btn btn-backup" onclick="backupManual()">💾 Copia ahora</button><button class="btn btn-outline" onclick="exportarExcel()">📊 Excel</button><button class="btn btn-outline" onclick="importarDesdeExcel()">📥 Importar</button></div>
-        </div>
-    </header>
+<header class="header">
+<div class="header-banner"><img src="cabecera2.png" alt="Logo" onerror="this.style.display='none'"></div>
+<div class="header-toolbar">
+<div class="left"><div class="title">🌿 La Concepción <span>Málaga</span><span class="user-email" id="userEmailDisplay"></span></div><div class="backup-indicator" id="backupIndicator"><span>☁️</span><span id="ultimaCopiaTexto">--:--</span><span class="estado" id="estadoBackup"></span></div></div>
+<div class="actions"><button class="btn btn-logout" onclick="cerrarSesion()">🚪 Salir</button><button class="btn btn-backup" onclick="backupManual()">💾 Copia</button><button class="btn btn-outline" onclick="exportarExcel()">📊 Excel</button><button class="btn btn-outline" onclick="importarDesdeExcel()">📥 Importar</button></div>
+</div>
+</header>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="cambiarPestana('libros')">📚 Libros</button>
-        <button class="tab-btn" onclick="cambiarPestana('prestamos')" id="tabPrestamos">📋 Préstamos <span class="badge-tab" id="prestamosBadge" style="display:none;">0</span></button>
-        <button class="tab-btn" onclick="cambiarPestana('alertas')" id="tabAlertas">🔔 Alertas <span class="badge-tab" id="alertasBadge" style="display:none;">0</span></button>
-    </div>
+<div class="tabs">
+<button class="tab-btn active" onclick="cambiarPestana('libros')">📚 Libros</button>
+<button class="tab-btn" onclick="cambiarPestana('prestamos')" id="tabPrestamos">📋 Préstamos <span class="badge-tab" id="prestamosBadge" style="display:none;">0</span></button>
+<button class="tab-btn" onclick="cambiarPestana('alertas')" id="tabAlertas">🔔 Alertas <span class="badge-tab" id="alertasBadge" style="display:none;">0</span></button>
+</div>
 
-    <!-- TAB: LIBROS -->
-    <div class="tab-content active" id="tabLibros">
-        <div class="stats"><div class="stat-card"><div class="number" id="totalLibros">0</div><div class="label">📚 Total Libros</div></div><div class="stat-card"><div class="number" id="totalIdiomas">0</div><div class="label">🌐 Idiomas</div></div><div class="stat-card"><div class="number" id="totalProcedencias">0</div><div class="label">📦 Procedencias</div></div><div class="stat-card"><div class="number" id="totalMaterias">0</div><div class="label">📂 Materias CDU</div></div></div>
-        <section class="search-section">
-            <input type="text" id="searchInput" placeholder="🔍 Buscar por título, autor, editorial..." oninput="renderizarTabla()">
-            <div class="filters"><select id="filtroIdioma" onchange="renderizarTabla()"><option value="">Todos los idiomas</option></select><select id="filtroProcedencia" onchange="renderizarTabla()"><option value="">Todas las procedencias</option></select><select id="filtroMateria" onchange="renderizarTabla()"><option value="">Todas las materias</option></select></div>
-            <button class="btn btn-warning" onclick="limpiarFiltros()">🔄 Limpiar</button>
-            <button class="btn btn-success" onclick="abrirModal()">➕ Nuevo Libro</button>
-        </section>
-        <div class="table-container"><table><thead><tr><th>Nº Inventario</th><th>Número</th><th>Título</th><th>Autor</th><th>Editorial</th><th>Año</th><th>Idioma</th><th>Procedencia</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tablaBody"></tbody></table></div>
-        <div class="pagination-bar"><span class="info" id="infoPaginacion"></span><div class="controles" id="paginacionControles"></div></div>
-    </div>
+<!-- LIBROS -->
+<div class="tab-content active" id="tabLibros">
+<div class="stats"><div class="stat-card"><div class="number" id="totalLibros">0</div><div class="label">📚 Total</div></div><div class="stat-card"><div class="number" id="totalIdiomas">0</div><div class="label">🌐 Idiomas</div></div><div class="stat-card"><div class="number" id="totalProcedencias">0</div><div class="label">📦 Procedencias</div></div><div class="stat-card"><div class="number" id="totalMaterias">0</div><div class="label">📂 Materias</div></div></div>
+<section class="search-section">
+<input type="text" id="searchInput" placeholder="🔍 Buscar..." oninput="renderizarTabla()">
+<div class="filters"><select id="filtroIdioma" onchange="renderizarTabla()"><option value="">Todos los idiomas</option></select><select id="filtroProcedencia" onchange="renderizarTabla()"><option value="">Todas las procedencias</option></select><select id="filtroMateria" onchange="renderizarTabla()"><option value="">Todas las materias</option></select></div>
+<button class="btn btn-warning" onclick="limpiarFiltros()">🔄 Limpiar</button>
+<button class="btn btn-success" onclick="abrirModal()">➕ Nuevo</button>
+</section>
+<div class="table-container"><table><thead><tr><th>Nº</th><th>Número</th><th>Título</th><th>Autor</th><th>Editorial</th><th>Año</th><th>Idioma</th><th>Procedencia</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tablaBody"></tbody></table></div>
+<div class="pagination-bar"><span class="info" id="infoPaginacion"></span><div class="controles" id="paginacionControles"></div></div>
+</div>
 
-    <!-- TAB: PRÉSTAMOS -->
-    <div class="tab-content" id="tabPrestamos">
-        <div class="stats"><div class="stat-card"><div class="number" id="totalPrestamos">0</div><div class="label">📋 Total Préstamos</div></div><div class="stat-card"><div class="number" id="prestamosActivos">0</div><div class="label">🟢 Activos</div></div><div class="stat-card"><div class="number" id="prestamosRetrasados">0</div><div class="label">🔴 Retrasados</div></div><div class="stat-card"><div class="number" id="prestamosDevueltos">0</div><div class="label">✅ Devueltos</div></div></div>
-        <section class="search-section">
-            <input type="text" id="searchPrestamos" placeholder="🔍 Buscar por socio, libro o email..." oninput="renderizarPrestamos()">
-            <div class="filters"><select id="filtroEstadoPrestamo" onchange="renderizarPrestamos()"><option value="">Todos los estados</option><option value="activo">🟢 Activos</option><option value="retrasado">🔴 Retrasados</option><option value="devuelto">✅ Devueltos</option></select></div>
-            <button class="btn btn-success" onclick="abrirModalPrestamo()">➕ Nuevo Préstamo</button>
-            <button class="btn btn-warning" onclick="limpiarFiltrosPrestamos()">🔄 Limpiar</button>
-        </section>
-        <div class="table-container"><table><thead><tr><th>ID</th><th>Libro</th><th>Socio</th><th>Email</th><th>Teléfono</th><th>Fecha Préstamo</th><th>Fecha Devolución</th><th>Estado</th><th>Email</th><th>Acciones</th></tr></thead><tbody id="tablaPrestamos"></tbody></table></div>
-        <div class="pagination-bar"><span class="info" id="infoPaginacionPrestamos"></span><div class="controles" id="paginacionControlesPrestamos"></div></div>
-    </div>
+<!-- PRÉSTAMOS -->
+<div class="tab-content" id="tabPrestamos">
+<div class="stats"><div class="stat-card"><div class="number" id="totalPrestamos">0</div><div class="label">📋 Total</div></div><div class="stat-card"><div class="number" id="prestamosActivos">0</div><div class="label">🟢 Activos</div></div><div class="stat-card"><div class="number" id="prestamosRetrasados">0</div><div class="label">🔴 Retrasados</div></div><div class="stat-card"><div class="number" id="prestamosDevueltos">0</div><div class="label">✅ Devueltos</div></div></div>
+<section class="search-section">
+<input type="text" id="searchPrestamos" placeholder="🔍 Buscar..." oninput="renderizarPrestamos()">
+<div class="filters"><select id="filtroEstadoPrestamo" onchange="renderizarPrestamos()"><option value="">Todos</option><option value="activo">🟢 Activos</option><option value="retrasado">🔴 Retrasados</option><option value="devuelto">✅ Devueltos</option></select></div>
+<button class="btn btn-success" onclick="abrirModalPrestamo()">➕ Nuevo Préstamo</button>
+<button class="btn btn-warning" onclick="limpiarFiltrosPrestamos()">🔄 Limpiar</button>
+</section>
+<div class="table-container"><table><thead><tr><th>ID</th><th>Libro</th><th>Socio</th><th>Email</th><th>Teléfono</th><th>Fecha</th><th>Devolución</th><th>Estado</th><th>Email</th><th>Acciones</th></tr></thead><tbody id="tablaPrestamos"></tbody></table></div>
+<div class="pagination-bar"><span class="info" id="infoPaginacionPrestamos"></span><div class="controles" id="paginacionControlesPrestamos"></div></div>
+</div>
 
-    <!-- TAB: ALERTAS -->
-    <div class="tab-content" id="tabAlertas"><div id="alertasContainer"></div></div>
+<!-- ALERTAS -->
+<div class="tab-content" id="tabAlertas"><div id="alertasContainer"></div></div>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        <div class="credits"><span>Hecho con</span><span class="heart">❤️</span><span>por</span><span class="studio-logo"><img src="logo_studio5.png" alt="Studio 5" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><span class="text" style="display:none;">Studio 5</span><span class="text" style="display:inline;">Studio 5</span></span><span class="separator">·</span><a class="contact-link" onclick="enviarEmail()" title="Enviar email de contacto"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg> CONTACTO</a></div>
-        <div class="version">v2.0 · Biblioteca La Concepción · Málaga</div>
-    </footer>
+<footer class="footer">
+<div class="credits"><span>Hecho con</span><span class="heart">❤️</span><span>por Studio 5</span><span class="separator">·</span><a class="contact-link" onclick="enviarEmail()">CONTACTO</a></div>
+<div class="version">v2.0 · Biblioteca La Concepción · Málaga</div>
+</footer>
 </div>
 
 <!-- MODALES -->
-<div class="modal" id="modalForm"><div class="modal-content"><h2><span id="modalTitulo">📖 Nuevo Libro</span><button class="close" onclick="cerrarModal()">&times;</button></h2><form id="libroForm" onsubmit="guardarLibro(event)"><input type="hidden" id="editId" value=""><div class="form-row"><div class="form-group"><label>Nº de inventario *</label><input type="number" id="nInventario" required placeholder="Ej: 892"></div><div class="form-group"><label>Número</label><input type="text" id="numero" placeholder="Ej: 001, A-23, etc."></div></div><div class="form-row"><div class="form-group"><label>Título *</label><input type="text" id="titulo" required placeholder="Título completo del libro"></div><div class="form-group"><label>Autor</label><input type="text" id="autor" placeholder="Nombre del autor o autores"></div></div><div class="form-row"><div class="form-group"><label>Editorial</label><input type="text" id="editorial" placeholder="Nombre de la editorial"></div><div class="form-group"><label>Ciudad</label><input type="text" id="ciudad" placeholder="Ciudad de publicación"></div></div><div class="form-row"><div class="form-group"><label>Año de publicación</label><input type="number" id="anio" placeholder="Ej: 1999"></div><div class="form-group"><label>Idioma *</label><select id="idioma" required><option value="Español">Español</option><option value="Inglés">Inglés</option><option value="Francés">Francés</option><option value="Italiano">Italiano</option><option value="Catalán">Catalán</option><option value="Portugués">Portugués</option><option value="Otro">Otro</option></select></div></div><div class="form-row"><div class="form-group"><label>Procedencia</label><select id="procedencia"><option value="Legado José Antonio del Cañizo">Legado José Antonio del Cañizo</option><option value="Patronato Botánico">Patronato Botánico</option><option value="Colección Asociación Amigos del Jardín Botánico">Colección Asociación Amigos del Jardín Botánico</option><option value="Varios/Sin ordenar">Varios/Sin ordenar</option></select></div><div class="form-group"><label>Sección</label><select id="seccion"><option value="Sección Adultos">Sección Adultos</option><option value="Sección Infantil">Sección Infantil</option><option value="Fondo Local y Varios">Fondo Local y Varios</option><option value="Arreglos Florales">Arreglos Florales</option></select></div></div><div class="form-row"><div class="form-group"><label>Materia CDU</label><input type="text" id="materia" placeholder="Ej: 71 - Jardinería/Paisaje"></div><div class="form-group"><label>Ubicación (código de estantería)</label><input type="text" id="ubicacion" placeholder="Ej: DIR13, BOT23, EN 21"></div></div><div class="form-actions"><button type="button" class="btn btn-danger" onclick="cerrarModal()">Cancelar</button><button type="submit" class="btn btn-success" id="btnGuardar">💾 Guardar Libro</button></div></form></div></div>
+<div class="modal" id="modalForm"><div class="modal-content"><h2><span id="modalTitulo">📖 Nuevo Libro</span><button class="close" onclick="cerrarModal()">&times;</button></h2><form id="libroForm" onsubmit="guardarLibro(event)"><input type="hidden" id="editId"><div class="form-row"><div class="form-group"><label>Nº inventario *</label><input type="number" id="nInventario" required placeholder="892"></div><div class="form-group"><label>Número</label><input type="text" id="numero" placeholder="001"></div></div><div class="form-row"><div class="form-group"><label>Título *</label><input type="text" id="titulo" required placeholder="Título"></div><div class="form-group"><label>Autor</label><input type="text" id="autor" placeholder="Autor"></div></div><div class="form-row"><div class="form-group"><label>Editorial</label><input type="text" id="editorial" placeholder="Editorial"></div><div class="form-group"><label>Ciudad</label><input type="text" id="ciudad" placeholder="Ciudad"></div></div><div class="form-row"><div class="form-group"><label>Año</label><input type="number" id="anio" placeholder="1999"></div><div class="form-group"><label>Idioma *</label><select id="idioma"><option value="Español">Español</option><option value="Inglés">Inglés</option><option value="Francés">Francés</option><option value="Italiano">Italiano</option><option value="Catalán">Catalán</option><option value="Portugués">Portugués</option><option value="Otro">Otro</option></select></div></div><div class="form-row"><div class="form-group"><label>Procedencia</label><select id="procedencia"><option value="Legado José Antonio del Cañizo">Legado José Antonio del Cañizo</option><option value="Patronato Botánico">Patronato Botánico</option><option value="Colección Asociación Amigos del Jardín Botánico">Colección Asociación Amigos del Jardín Botánico</option><option value="Varios/Sin ordenar">Varios/Sin ordenar</option></select></div><div class="form-group"><label>Sección</label><select id="seccion"><option value="Sección Adultos">Sección Adultos</option><option value="Sección Infantil">Sección Infantil</option><option value="Fondo Local y Varios">Fondo Local y Varios</option><option value="Arreglos Florales">Arreglos Florales</option></select></div></div><div class="form-row"><div class="form-group"><label>Materia CDU</label><input type="text" id="materia" placeholder="71 - Jardinería"></div><div class="form-group"><label>Ubicación</label><input type="text" id="ubicacion" placeholder="DIR13"></div></div><div class="form-actions"><button type="button" class="btn btn-danger" onclick="cerrarModal()">Cancelar</button><button type="submit" class="btn btn-success" id="btnGuardar">💾 Guardar</button></div></form></div></div>
 
-<div class="modal" id="modalPrestamo"><div class="modal-content"><h2><span id="modalPrestamoTitulo">📋 Nuevo Préstamo</span><button class="close" onclick="cerrarModalPrestamo()">&times;</button></h2><form id="prestamoForm" onsubmit="guardarPrestamo(event)"><input type="hidden" id="editPrestamoId" value=""><div class="form-group"><label>Libro *</label><select id="prestamoLibro" required><option value="">Selecciona un libro...</option></select></div><div class="form-row"><div class="form-group"><label>Nombre del socio *</label><input type="text" id="prestamoSocio" required placeholder="Nombre completo"></div><div class="form-group"><label>Email del socio *</label><input type="email" id="prestamoEmail" required placeholder="email@socio.com"></div></div><div class="form-row"><div class="form-group"><label>Teléfono / WhatsApp</label><input type="text" id="prestamoTelefono" placeholder="+34 600 000 000"></div><div class="form-group"><label>Fecha de préstamo *</label><input type="date" id="prestamoFecha" required></div></div><div class="form-group"><label>Observaciones</label><textarea id="prestamoObservaciones" rows="2" placeholder="Notas adicionales..."></textarea></div><div class="form-actions"><button type="button" class="btn btn-danger" onclick="cerrarModalPrestamo()">Cancelar</button><button type="submit" class="btn btn-success" id="btnGuardarPrestamo">📋 Registrar Préstamo</button></div></form></div></div>
+<div class="modal" id="modalPrestamo"><div class="modal-content"><h2><span id="modalPrestamoTitulo">📋 Nuevo Préstamo</span><button class="close" onclick="cerrarModalPrestamo()">&times;</button></h2><form id="prestamoForm" onsubmit="guardarPrestamo(event)"><input type="hidden" id="editPrestamoId"><div class="form-group"><label>Libro *</label><select id="prestamoLibro" required><option value="">Selecciona un libro...</option></select></div><div class="form-row"><div class="form-group"><label>Nombre socio *</label><input type="text" id="prestamoSocio" required placeholder="Nombre"></div><div class="form-group"><label>Email *</label><input type="email" id="prestamoEmail" required placeholder="email@socio.com"></div></div><div class="form-row"><div class="form-group"><label>Teléfono</label><input type="text" id="prestamoTelefono" placeholder="+34 600 000 000"></div><div class="form-group"><label>Fecha préstamo *</label><input type="date" id="prestamoFecha" required></div></div><div class="form-group"><label>Observaciones</label><textarea id="prestamoObservaciones" rows="2"></textarea></div><div class="form-actions"><button type="button" class="btn btn-danger" onclick="cerrarModalPrestamo()">Cancelar</button><button type="submit" class="btn btn-success" id="btnGuardarPrestamo">📋 Registrar</button></div></form></div></div>
 
-<div class="modal" id="modalEditarEmail"><div class="modal-content"><h2><span id="modalEditarEmailTitulo">✏️ Editar Email del Socio</span><button class="close" onclick="cerrarModalEditarEmail()">&times;</button></h2><form id="editarEmailForm" onsubmit="guardarEditarEmail(event)"><input type="hidden" id="editEmailPrestamoId" value=""><div class="form-group"><label>Socio</label><input type="text" id="editEmailSocio" disabled style="background:#f7fafc;"></div><div class="form-group"><label>Email del socio *</label><input type="email" id="editEmailInput" required placeholder="email@socio.com"></div><div class="form-group"><label>Teléfono / WhatsApp</label><input type="text" id="editEmailTelefono" placeholder="+34 600 000 000"></div><div class="form-actions"><button type="button" class="btn btn-danger" onclick="cerrarModalEditarEmail()">Cancelar</button><button type="submit" class="btn btn-success" id="btnGuardarEditarEmail">💾 Guardar Cambios</button></div></form></div></div>
+<!-- MODAL EDITAR EMAIL -->
+<div class="modal" id="modalEditarEmail"><div class="modal-content"><h2><span id="modalEditarEmailTitulo">✏️ Editar Email</span><button class="close" onclick="cerrarModalEditarEmail()">&times;</button></h2><form id="editarEmailForm" onsubmit="guardarEditarEmail(event)"><input type="hidden" id="editEmailPrestamoId"><div class="form-group"><label>Socio</label><input type="text" id="editEmailSocio" disabled style="background:#f7fafc"></div><div class="form-group"><label>Email *</label><input type="email" id="editEmailInput" required placeholder="email@socio.com"></div><div class="form-group"><label>Teléfono</label><input type="text" id="editEmailTelefono" placeholder="+34 600 000 000"></div><div class="form-actions"><button type="button" class="btn btn-danger" onclick="cerrarModalEditarEmail()">Cancelar</button><button type="submit" class="btn btn-success">💾 Guardar</button></div></form></div></div>
 
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-    // ============================================================
-    //  CONFIGURACIÓN
-    //  ============================================================
-    const firebaseConfig = {
-        apiKey: "AIzaSyD4wW02ZlKNvpru_C3TWLrNtS6h-du6lz4",
-        authDomain: "biblioteca-concepcion.firebaseapp.com",
-        projectId: "biblioteca-concepcion",
-        storageBucket: "biblioteca-concepcion.firebasestorage.app",
-        messagingSenderId: "163454916602",
-        appId: "1:163454916602:web:f254082f63dd44f7c5f643",
-        measurementId: "G-EM1TC1XN97"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+const firebaseConfig = { apiKey: "AIzaSyD4wW02ZlKNvpru_C3TWLrNtS6h-du6lz4", authDomain: "biblioteca-concepcion.firebaseapp.com", projectId: "biblioteca-concepcion", storageBucket: "biblioteca-concepcion.firebasestorage.app", messagingSenderId: "163454916602", appId: "1:163454916602:web:f254082f63dd44f7c5f643" };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
-    const EMAILJS_PUBLIC_KEY = 'gcPOJFiRNxa4VeKGo';
-    const EMAILJS_SERVICE_ID = 'service_fyugdmi';
-    const EMAILJS_TEMPLATE_ID = 'template_55bjozo';
-    const EMAIL_REMITENTE = 'bibliotecajbhmalaga@gmail.com';
-    emailjs.init(EMAILJS_PUBLIC_KEY);
+const EMAILJS_PUBLIC_KEY = 'gcPOJFiRNxa4VeKGo';
+const EMAILJS_SERVICE_ID = 'service_fyugdmi';
+const EMAILJS_TEMPLATE_ID = 'template_55bjozo';
+const EMAIL_REMITENTE = 'bibliotecajbhmalaga@gmail.com';
+emailjs.init(EMAILJS_PUBLIC_KEY);
 
-    const CLIENT_ID = '314904860075-j05hucjbmt48fcm9s4guepqnhh5o1fen.apps.googleusercontent.com';
-    const API_KEY_DRIVE = 'AIzaSyAWeZrrhlb5O2-sA-is1R6GjLS-OkftNzI';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    const FOLDER_NAME = 'Biblioteca_La_Concepcion_Backups';
+const CLIENT_ID = '314904860075-j05hucjbmt48fcm9s4guepqnhh5o1fen.apps.googleusercontent.com';
+const API_KEY_DRIVE = 'AIzaSyAWeZrrhlb5O2-sA-is1R6GjLS-OkftNzI';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const FOLDER_NAME = 'Biblioteca_La_Concepcion_Backups';
 
-    const STORAGE_KEY = 'biblioteca_concepcion_libros';
-    const PRESTAMOS_KEY = 'biblioteca_concepcion_prestamos';
-    const BACKUP_KEY = 'biblioteca_concepcion_ultimo_backup';
-    const EMAILS_ENVIADOS_KEY = 'biblioteca_concepcion_emails_enviados';
+const STORAGE_KEY = 'biblioteca_concepcion_libros';
+const PRESTAMOS_KEY = 'biblioteca_concepcion_prestamos';
+const BACKUP_KEY = 'biblioteca_concepcion_ultimo_backup';
+const EMAILS_ENVIADOS_KEY = 'biblioteca_concepcion_emails_enviados';
 
-    let libros = [], prestamos = [], emailsEnviados = [];
-    let paginaActual = 1, paginaPrestamos = 1, POR_PAGINA = 15;
-    let pestanaActual = 'libros';
-    let intervaloBackup = null, intervaloAlertas = null, intervaloEmails = null;
-    let gapiInicializado = false, tokenAcceso = null;
+let libros = [], prestamos = [], emailsEnviados = [];
+let paginaActual = 1, paginaPrestamos = 1, POR_PAGINA = 15;
+let gapiInicializado = false, tokenAcceso = null;
+let intervaloBackup = null, intervaloAlertas = null, intervaloEmails = null;
 
-    // ============================================================
-    //  SESIÓN
-    //  ============================================================
-    function verificarSesion() {
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('userEmailDisplay').textContent = user.email;
-                mostrarContenido();
-                mostrarToast(`✅ Bienvenido, ${user.displayName || user.email}`, 'success');
-            } else {
-                mostrarLogin();
-            }
-        });
-    }
+// ============================================================
+// FUNCIONES PRINCIPALES
+// ============================================================
+function mostrarToast(msg, tipo='info') {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = `toast toast-${tipo}`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(100px)'; t.style.transition = 'all 0.3s'; setTimeout(() => t.remove(), 300); }, 4000);
+}
 
-    function mostrarLogin() {
-        document.getElementById('loginOverlay').classList.remove('hidden');
-        document.getElementById('mainContent').style.display = 'none';
-        document.getElementById('emailInput').value = '';
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('btnLogin').disabled = false;
-        document.getElementById('btnGoogle').disabled = false;
-        document.getElementById('loginError').classList.remove('visible');
-        document.getElementById('loginSuccess').classList.remove('visible');
-    }
+function escapeHTML(s) { if(!s) return ''; return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
 
-    function mostrarContenido() {
-        document.getElementById('loginOverlay').classList.add('hidden');
-        document.getElementById('mainContent').style.display = 'flex';
-        cargarLibros();
-        cargarPrestamos();
-        cargarEmailsEnviados();
-        renderizarTabla();
-        renderizarPrestamos();
-        actualizarEstadisticas();
-        actualizarEstadisticasPrestamos();
-        cargarFiltros();
-        actualizarIndicadorBackup();
-        actualizarAlertas();
-        actualizarBadges();
-        iniciarBackupAutomatico();
-        iniciarAlertasAutomaticas();
-        iniciarVerificacionEmails();
-    }
+function getLibroById(id){ return libros.find(l => l.id == id); }
+function getLibroDisponible(id){ return !prestamos.find(p => p.libroId == id && p.estado !== 'devuelto'); }
+function getPrestamoActivo(id){ return prestamos.find(p => p.libroId == id && p.estado !== 'devuelto'); }
 
-    verificarSesion();
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { cerrarModal(); cerrarModalPrestamo(); cerrarModalEditarEmail(); }
+// ============================================================
+// SESIÓN
+// ============================================================
+function verificarSesion() {
+    auth.onAuthStateChanged(user => {
+        if (user) { document.getElementById('userEmailDisplay').textContent = user.email; mostrarContenido(); }
+        else { mostrarLogin(); }
     });
+}
 
-    function iniciarGapi() {
-        try {
-            gapi.load('client:auth2', () => {
-                gapi.client.init({ apiKey: API_KEY_DRIVE, clientId: CLIENT_ID, scope: SCOPES, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] })
-                .then(() => {
-                    gapiInicializado = true;
-                    const auth = gapi.auth2.getAuthInstance();
-                    if (auth.isSignedIn.get()) {
-                        tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
-                    }
-                }).catch(err => console.warn('⚠️ Google API:', err));
-            });
-        } catch(e) { console.warn('⚠️ Google API:', e); }
+function mostrarLogin() {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    document.getElementById('mainContent').style.display = 'none';
+}
+
+function mostrarContenido() {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('mainContent').style.display = 'flex';
+    cargarLibros();
+    cargarPrestamos();
+    cargarEmailsEnviados();
+    renderizarTabla();
+    renderizarPrestamos();
+    actualizarEstadisticas();
+    actualizarEstadisticasPrestamos();
+    cargarFiltros();
+    actualizarIndicadorBackup();
+    actualizarAlertas();
+    actualizarBadges();
+    iniciarBackupAutomatico();
+    iniciarAlertasAutomaticas();
+    iniciarVerificacionEmails();
+}
+verificarSesion();
+
+document.addEventListener('keydown', (e) => { if(e.key==='Escape'){ cerrarModal(); cerrarModalPrestamo(); cerrarModalEditarEmail(); } });
+
+// ============================================================
+// AUTENTICACIÓN
+// ============================================================
+async function loginWithEmail(e) {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value;
+    const password = document.getElementById('passwordInput').value;
+    const btn = document.getElementById('btnLogin');
+    const err = document.getElementById('loginError');
+    btn.disabled = true;
+    err.classList.remove('visible');
+    try { await auth.signInWithEmailAndPassword(email, password); }
+    catch(error) {
+        let msg = '❌ ';
+        if(error.code === 'auth/user-not-found') msg += 'Usuario no encontrado.';
+        else if(error.code === 'auth/wrong-password') msg += 'Contraseña incorrecta.';
+        else if(error.code === 'auth/invalid-email') msg += 'Email inválido.';
+        else if(error.code === 'auth/too-many-requests') msg += 'Demasiados intentos.';
+        else msg += error.message;
+        err.textContent = msg;
+        err.classList.add('visible');
+        btn.disabled = false;
+        setTimeout(() => err.classList.remove('visible'), 4000);
     }
-    iniciarGapi();
+}
 
-    // ============================================================
-    //  FUNCIONES DE AUTENTICACIÓN
-    //  ============================================================
-    async function loginWithEmail(e) {
-        e.preventDefault();
-        const email = document.getElementById('emailInput').value;
-        const password = document.getElementById('passwordInput').value;
-        const btn = document.getElementById('btnLogin');
-        const errorMsg = document.getElementById('loginError');
-        btn.disabled = true;
-        errorMsg.classList.remove('visible');
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-        } catch (error) {
-            let mensaje = '❌ Error al iniciar sesión. ';
-            if (error.code === 'auth/user-not-found') mensaje += 'Usuario no encontrado.';
-            else if (error.code === 'auth/wrong-password') mensaje += 'Contraseña incorrecta.';
-            else if (error.code === 'auth/invalid-email') mensaje += 'Email inválido.';
-            else if (error.code === 'auth/too-many-requests') mensaje += 'Demasiados intentos. Intenta más tarde.';
-            else mensaje += error.message;
-            errorMsg.textContent = mensaje;
-            errorMsg.classList.add('visible');
-            btn.disabled = false;
-            setTimeout(() => errorMsg.classList.remove('visible'), 4000);
-        }
+async function loginWithGoogle() {
+    const err = document.getElementById('loginError');
+    err.classList.remove('visible');
+    try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+    catch(error) { err.textContent = '❌ ' + error.message; err.classList.add('visible'); setTimeout(() => err.classList.remove('visible'), 4000); }
+}
+
+function resetPassword() {
+    const email = document.getElementById('emailInput').value;
+    const err = document.getElementById('loginError');
+    const ok = document.getElementById('loginSuccess');
+    err.classList.remove('visible'); ok.classList.remove('visible');
+    if(!email) { err.textContent = '❌ Introduce tu email primero.'; err.classList.add('visible'); setTimeout(() => err.classList.remove('visible'), 4000); return; }
+    const btn = document.getElementById('btnLogin');
+    const orig = btn.textContent;
+    btn.textContent = '⏳ Enviando...';
+    btn.disabled = true;
+    auth.sendPasswordResetEmail(email).then(() => {
+        ok.textContent = '📧 Te hemos enviado un email para restablecer tu contraseña.';
+        ok.classList.add('visible');
+        mostrarToast('📧 Email de restablecimiento enviado', 'success');
+        btn.textContent = orig; btn.disabled = false;
+        setTimeout(() => ok.classList.remove('visible'), 8000);
+    }).catch(error => {
+        err.textContent = '❌ ' + error.message;
+        err.classList.add('visible');
+        btn.textContent = orig; btn.disabled = false;
+        setTimeout(() => err.classList.remove('visible'), 4000);
+    });
+}
+
+function cerrarSesion() {
+    if(confirm('¿Seguro que quieres cerrar sesión?')) {
+        auth.signOut().then(() => { mostrarLogin(); mostrarToast('🔒 Sesión cerrada', 'info'); });
     }
+}
 
-    async function loginWithGoogle() {
-        const errorMsg = document.getElementById('loginError');
-        const btn = document.getElementById('btnGoogle');
-        errorMsg.classList.remove('visible');
-        btn.disabled = true;
-        try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            await auth.signInWithPopup(provider);
-        } catch (error) {
-            let mensaje = '❌ Error al iniciar sesión con Google. ';
-            if (error.code === 'auth/popup-closed-by-user') mensaje += 'Ventana de autenticación cerrada.';
-            else mensaje += error.message;
-            errorMsg.textContent = mensaje;
-            errorMsg.classList.add('visible');
-            btn.disabled = false;
-            setTimeout(() => errorMsg.classList.remove('visible'), 4000);
-        }
-    }
+function enviarEmail() { window.location.href = 'mailto:elinformaticoencasa@gmail.com'; }
+function enviarEmailContacto() { window.location.href = 'mailto:elinformaticoencasa@gmail.com'; }
 
-    function resetPassword() {
-        const email = document.getElementById('emailInput').value;
-        const errorMsg = document.getElementById('loginError');
-        const successMsg = document.getElementById('loginSuccess');
-        errorMsg.classList.remove('visible');
-        successMsg.classList.remove('visible');
-        if (!email) {
-            errorMsg.textContent = '❌ Introduce tu email primero.';
-            errorMsg.classList.add('visible');
-            setTimeout(() => errorMsg.classList.remove('visible'), 4000);
-            return;
-        }
-        const btn = document.getElementById('btnLogin');
-        const textoOriginal = btn.textContent;
-        btn.textContent = '⏳ Enviando...';
-        btn.disabled = true;
-        auth.sendPasswordResetEmail(email)
+// ============================================================
+// GOOGLE DRIVE
+// ============================================================
+function iniciarGapi() {
+    try {
+        gapi.load('client:auth2', () => {
+            gapi.client.init({ apiKey: API_KEY_DRIVE, clientId: CLIENT_ID, scope: SCOPES, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] })
             .then(() => {
-                successMsg.textContent = '📧 Te hemos enviado un email para restablecer tu contraseña.';
-                successMsg.classList.add('visible');
-                mostrarToast('📧 Email de restablecimiento enviado', 'success');
-                btn.textContent = textoOriginal;
-                btn.disabled = false;
-                setTimeout(() => successMsg.classList.remove('visible'), 8000);
-            })
-            .catch((error) => {
-                let mensaje = '❌ Error al enviar el email. ';
-                if (error.code === 'auth/user-not-found') mensaje += 'No existe una cuenta con este email.';
-                else if (error.code === 'auth/invalid-email') mensaje += 'Email inválido.';
-                else mensaje += error.message;
-                errorMsg.textContent = mensaje;
-                errorMsg.classList.add('visible');
-                btn.textContent = textoOriginal;
-                btn.disabled = false;
-                setTimeout(() => errorMsg.classList.remove('visible'), 4000);
-            });
-    }
+                gapiInicializado = true;
+                const auth = gapi.auth2.getAuthInstance();
+                if(auth.isSignedIn.get()) tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
+            }).catch(() => {});
+        });
+    } catch(e) {}
+}
+iniciarGapi();
 
-    function cerrarSesion() {
-        if (confirm('¿Seguro que quieres cerrar sesión?')) {
-            auth.signOut().then(() => {
-                mostrarLogin();
-                mostrarToast('🔒 Sesión cerrada', 'info');
-            });
-        }
-    }
+function actualizarIndicadorBackup() {
+    const fecha = localStorage.getItem(BACKUP_KEY);
+    const el = document.getElementById('ultimaCopiaTexto');
+    const st = document.getElementById('estadoBackup');
+    if(fecha) { try { const d = new Date(fecha); el.textContent = d.toLocaleString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); st.className = 'estado'; } catch(e) { el.textContent = '--:--'; st.className = 'estado error'; } }
+    else { el.textContent = 'Sin copia'; st.className = 'estado error'; }
+}
 
-    function enviarEmail() {
-        window.location.href = 'mailto:elinformaticoencasa@gmail.com?subject=Consulta sobre la app Biblioteca La Concepción&body=Hola,%0A%0AMe pongo en contacto desde la aplicación de la Biblioteca La Concepción para...%0A%0ASaludos.';
-        mostrarToast('📧 Abriendo cliente de correo...', 'info');
-    }
+function guardarFechaBackup() { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); actualizarIndicadorBackup(); }
 
-    function enviarEmailContacto() {
-        window.location.href = 'mailto:elinformaticoencasa@gmail.com?subject=Solicitud de acceso - Biblioteca La Concepción&body=Hola,%0A%0AMe gustaría solicitar acceso a la aplicación de la Biblioteca La Concepción.%0A%0ASaludos.';
-        mostrarToast('📧 Abriendo cliente de correo...', 'info');
-    }
+async function backupManual() {
+    guardarFechaBackup();
+    mostrarToast('💾 Copia local guardada', 'success');
+    if(!gapiInicializado) { mostrarToast('⚠️ Google Drive no disponible', 'warning'); return; }
+    try {
+        const auth = gapi.auth2.getAuthInstance();
+        if(!auth.isSignedIn.get()) await auth.signIn();
+        tokenAcceso = auth.currentUser.get().getAuthResponse().access_token;
+        await realizarBackup(true);
+    } catch(e) { mostrarToast('⚠️ No se pudo conectar con Google Drive', 'warning'); }
+}
 
-    // ============================================================
-    //  EMAILS
-    //  ============================================================
-    function cargarEmailsEnviados() {
-        const data = localStorage.getItem(EMAILS_ENVIADOS_KEY);
-        if (data) { try { emailsEnviados = JSON.parse(data); if (!Array.isArray(emailsEnviados)) emailsEnviados = []; } catch(e) { emailsEnviados = []; } }
-        else { emailsEnviados = []; }
-        return emailsEnviados;
-    }
+async function realizarBackup(mostrar = false) {
+    guardarFechaBackup();
+    if(!gapiInicializado || !tokenAcceso) return;
+    try {
+        const data = JSON.stringify({ libros, prestamos, emailsEnviados }, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const fecha = new Date().toISOString().replace(/[:.]/g, '-');
+        const nombre = `backup_${fecha}.json`;
+        const carpetaId = await buscarOCrearCarpeta();
+        const metadata = { name: nombre, parents: [carpetaId], mimeType: 'application/json' };
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', blob);
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST', headers: { 'Authorization': `Bearer ${tokenAcceso}` }, body: form
+        });
+        const result = await res.json();
+        if(result.id && mostrar) mostrarToast('☁️ Backup guardado en Google Drive', 'success');
+    } catch(e) { if(mostrar) mostrarToast('⚠️ Error al guardar en Google Drive', 'error'); }
+}
 
-    function guardarEmailsEnviados() {
-        localStorage.setItem(EMAILS_ENVIADOS_KEY, JSON.stringify(emailsEnviados));
-    }
+async function buscarOCrearCarpeta() {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`, { headers: { 'Authorization': `Bearer ${tokenAcceso}` } });
+    const data = await res.json();
+    if(data.files && data.files.length > 0) return data.files[0].id;
+    const metadata = { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' };
+    const r = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST', headers: { 'Authorization': `Bearer ${tokenAcceso}`, 'Content-Type': 'application/json' }, body: JSON.stringify(metadata)
+    });
+    const result = await r.json();
+    return result.id;
+}
 
-    function emailYaEnviado(prestamoId, tipo) {
-        return emailsEnviados.some(e => e.prestamoId === prestamoId && e.tipo === tipo);
-    }
+function iniciarBackupAutomatico() {
+    if(intervaloBackup) clearInterval(intervaloBackup);
+    intervaloBackup = setInterval(() => { if(tokenAcceso) realizarBackup(false); }, 300000);
+}
 
-    function registrarEmailEnviado(prestamoId, tipo) {
-        emailsEnviados.push({ prestamoId, tipo, fecha: new Date().toISOString() });
-        guardarEmailsEnviados();
-    }
+// ============================================================
+// EMAILS
+// ============================================================
+function cargarEmailsEnviados() {
+    const d = localStorage.getItem(EMAILS_ENVIADOS_KEY);
+    if(d) { try { emailsEnviados = JSON.parse(d); if(!Array.isArray(emailsEnviados)) emailsEnviados = []; } catch(e) { emailsEnviados = []; } }
+    else emailsEnviados = [];
+    return emailsEnviados;
+}
+function guardarEmailsEnviados() { localStorage.setItem(EMAILS_ENVIADOS_KEY, JSON.stringify(emailsEnviados)); }
+function emailYaEnviado(id, tipo) { return emailsEnviados.some(e => e.prestamoId === id && e.tipo === tipo); }
+function registrarEmailEnviado(id, tipo) { emailsEnviados.push({ prestamoId: id, tipo, fecha: new Date().toISOString() }); guardarEmailsEnviados(); }
 
-    async function enviarEmailRecordatorio(prestamoId, tipo = 'manual') {
-        const prestamo = prestamos.find(p => p.id == prestamoId);
-        if (!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return false; }
-        if (!prestamo.email || prestamo.email.trim() === '') {
-            mostrarToast('❌ El socio no tiene email. Usa ✏️📧 para añadirlo.', 'error');
-            return false;
-        }
-        const libro = getLibroById(prestamo.libroId);
-        const hoy = new Date();
-        const fechaPrestamo = new Date(prestamo.fechaPrestamo);
-        const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
-        let mensaje = '', asunto = '';
-        if (tipo === 'dia30' || tipo === 'manual') {
-            mensaje = `Te recordamos que el libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. El plazo es de 30 días. Por favor, devuélvelo.`;
-            asunto = `📚 Recordatorio de préstamo - Día ${diffDias}`;
-        } else if (tipo === 'dia45') {
-            mensaje = `El libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. Ya has superado el plazo de 30 días. Devuélvelo cuanto antes.`;
-            asunto = `⚠️ Aviso - Préstamo retrasado (${diffDias} días)`;
-        } else if (tipo === 'dia60') {
-            mensaje = `El libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. Es urgente que lo devuelvas. Contacta con la biblioteca si tienes problemas.`;
-            asunto = `🔴 Urgente - Préstamo muy retrasado (${diffDias} días)`;
-        } else {
-            mensaje = `El libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. Por favor, devuélvelo.`;
-            asunto = `📚 Recordatorio de préstamo - ${diffDias} días`;
-        }
-        const params = {
-            to_email: prestamo.email,
-            to_name: prestamo.socio,
+// ============================================================
+// ENVIAR EMAIL - CON BOTÓN DE EDITAR
+// ============================================================
+async function enviarEmailRecordatorio(prestamoId, tipo='manual') {
+    const prestamo = prestamos.find(p => p.id == prestamoId);
+    if(!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return false; }
+    if(!prestamo.email || prestamo.email.trim() === '') {
+        mostrarToast('❌ El socio no tiene email. Usa ✏️📧 para añadirlo.', 'error');
+        return false;
+    }
+    const libro = getLibroById(prestamo.libroId);
+    const hoy = new Date();
+    const fechaPrestamo = new Date(prestamo.fechaPrestamo);
+    const diffDias = Math.floor((hoy - fechaPrestamo) / (1000*60*60*24));
+    let mensaje = '', asunto = '';
+    if(tipo === 'dia30' || tipo === 'manual') {
+        mensaje = `Te recordamos que el libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo.`;
+        asunto = `📚 Recordatorio - ${diffDias} días`;
+    } else {
+        mensaje = `El libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. Por favor, devuélvelo.`;
+        asunto = `📚 Recordatorio de préstamo`;
+    }
+    try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            to_email: prestamo.email, to_name: prestamo.socio,
             libro_titulo: libro?.titulo || 'Libro desconocido',
             dias_retraso: diffDias,
             fecha_prestamo: new Date(prestamo.fechaPrestamo).toLocaleDateString('es-ES'),
-            biblioteca: 'Biblioteca La Concepción',
-            mensaje,
-            asunto,
-            from_email: EMAIL_REMITENTE
-        };
-        try {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
-            mostrarToast(`📧 Email enviado a ${prestamo.email}`, 'success');
-            return true;
-        } catch (error) {
-            mostrarToast('❌ Error al enviar email: ' + (error.text || error.message), 'error');
-            return false;
-        }
-    }
-
-    async function enviarEmailManual(prestamoId) {
-        const success = await enviarEmailRecordatorio(prestamoId, 'manual');
-        if (success) { registrarEmailEnviado(prestamoId, 'manual'); renderizarPrestamos(); actualizarAlertas(); }
-    }
-
-    // ============================================================
-    //  MODAL EDITAR EMAIL
-    //  ============================================================
-    function abrirModalEditarEmail(prestamoId) {
-        const prestamo = prestamos.find(p => p.id == prestamoId);
-        if (!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return; }
-        document.getElementById('modalEditarEmailTitulo').textContent = `✏️ Editar datos de "${prestamo.socio}"`;
-        document.getElementById('editEmailPrestamoId').value = prestamoId;
-        document.getElementById('editEmailSocio').value = prestamo.socio;
-        document.getElementById('editEmailInput').value = prestamo.email || '';
-        document.getElementById('editEmailTelefono').value = prestamo.telefono || '';
-        document.getElementById('modalEditarEmail').classList.add('active');
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => document.getElementById('editEmailInput').focus(), 100);
-    }
-
-    function cerrarModalEditarEmail() {
-        document.getElementById('modalEditarEmail').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    function guardarEditarEmail(e) {
-        e.preventDefault();
-        const prestamoId = document.getElementById('editEmailPrestamoId').value;
-        const nuevoEmail = document.getElementById('editEmailInput').value.trim();
-        const nuevoTelefono = document.getElementById('editEmailTelefono').value.trim();
-        if (!nuevoEmail) { mostrarToast('❌ El email es obligatorio', 'error'); return; }
-        const prestamo = prestamos.find(p => p.id == prestamoId);
-        if (!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return; }
-        prestamo.email = nuevoEmail;
-        prestamo.telefono = nuevoTelefono || prestamo.telefono || '';
-        guardarPrestamos();
-        cerrarModalEditarEmail();
-        renderizarPrestamos();
-        actualizarAlertas();
-        mostrarToast(`✅ Email actualizado para "${prestamo.socio}"`, 'success');
-        if (tokenAcceso) realizarBackup(false);
-    }
-
-    // ============================================================
-    //  GESTIÓN DE LIBROS
-    //  ============================================================
-    function cargarLibros() {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if (data) { try { libros = JSON.parse(data); if (!Array.isArray(libros)) libros = []; } catch(e) { libros = []; } }
-        else { libros = [ { id: 892, numero: '001', titulo: '"LES CEDRES". AN EXCEPTIONAL BOTANICAL GARDEN', autor: 'Varios autores', editorial: 'FRANKLIN PICARD EDITIONS', ciudad: 'PARIS', anio: 1999, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '71 - Jardinería/Paisaje', ubicacion: 'DIR13', seccion: 'Sección Adultos' }, { id: 600, numero: '002', titulo: '(OTRAS) HISTORIA(S) DE MÁLAGA', autor: 'Varios autores', editorial: 'PROMOTORA CULTURAL MALAGUEÑA', ciudad: 'MÁLAGA', anio: 1997, idioma: 'Español', procedencia: 'Legado José Antonio del Cañizo', materia: '63 - Agricultura/Técnica', ubicacion: 'TEC14', seccion: 'Sección Adultos' }, { id: 1081, numero: '003', titulo: '¿ALGO MÁS QUE UN PATIO DE RECREO….?', autor: 'María García', editorial: 'JUNTA DE ANDALUCÍA', ciudad: 'SEVILLA', anio: 1992, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '9 - Geografía/Medio Ambiente', ubicacion: 'EN 21', seccion: 'Sección Adultos' }, { id: 123, numero: '004', titulo: '¿QUÉ SON LAS REVOLUCIONES CIENTÍFICAS?', autor: 'Thomas S. Kuhn', editorial: 'PAIDOS IBERICA', ciudad: 'BARCELONA', anio: 1989, idioma: 'Español', procedencia: 'Legado José Antonio del Cañizo', materia: '58 - Botánica', ubicacion: 'BOT23', seccion: 'Sección Adultos' } ]; guardarLibros(); }
-        return libros;
-    }
-
-    function guardarLibros() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(libros));
-        actualizarEstadisticas();
-        renderizarTabla();
-    }
-
-    // ============================================================
-    //  GESTIÓN DE PRÉSTAMOS
-    //  ============================================================
-    function cargarPrestamos() {
-        const data = localStorage.getItem(PRESTAMOS_KEY);
-        if (data) { try { prestamos = JSON.parse(data); if (!Array.isArray(prestamos)) prestamos = []; } catch(e) { prestamos = []; } }
-        else { prestamos = []; guardarPrestamos(); }
-        return prestamos;
-    }
-
-    function guardarPrestamos() {
-        localStorage.setItem(PRESTAMOS_KEY, JSON.stringify(prestamos));
-        actualizarEstadisticasPrestamos();
-        actualizarBadges();
-        actualizarAlertas();
-        renderizarPrestamos();
-        renderizarTabla();
-    }
-
-    function getLibroById(id) { return libros.find(l => l.id == id); }
-    function getLibroDisponible(id) { return !prestamos.find(p => p.libroId == id && p.estado !== 'devuelto'); }
-    function getPrestamoActivoPorLibro(id) { return prestamos.find(p => p.libroId == id && p.estado !== 'devuelto'); }
-
-    // ============================================================
-    //  ALERTAS
-    //  ============================================================
-    function actualizarAlertas() {
-        const container = document.getElementById('alertasContainer');
-        const hoy = new Date();
-        const alertas = [];
-        prestamos.forEach(p => {
-            if (p.estado === 'devuelto') return;
-            const diffDias = Math.floor((hoy - new Date(p.fechaPrestamo)) / (1000*60*60*24));
-            if (diffDias > 30) {
-                const libro = getLibroById(p.libroId);
-                alertas.push({
-                    mensaje: `📖 "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días sin devolver.`,
-                    socio: p.socio, email: p.email, telefono: p.telefono, prestamoId: p.id, dias: diffDias,
-                    sinEmail: !p.email || p.email.trim() === ''
-                });
-            }
+            mensaje, asunto, from_email: EMAIL_REMITENTE
         });
-        const badge = document.getElementById('alertasBadge');
-        if (alertas.length > 0) { badge.style.display = 'inline'; badge.textContent = alertas.length; }
-        else { badge.style.display = 'none'; }
-        if (alertas.length === 0) {
-            container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>No hay alertas pendientes</p><p style="font-size:0.85rem; margin-top:8px;">Todos los préstamos están en plazo</p></div>`;
-        } else {
-            container.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;"><div style="background:#fee2e2;padding:12px 16px;border-radius:12px;border-left:4px solid #e53e3e;"><strong>🔴 ${alertas.length} préstamo(s) retrasado(s)</strong><p style="font-size:0.85rem;color:#4a5568;margin-top:4px;">Estos libros llevan más de 30 días sin devolver:</p></div>${alertas.map(a => `<div style="background:white;padding:14px 18px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #e53e3e;"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;"><div><div style="font-weight:600;">${a.mensaje}</div><div style="font-size:0.85rem;color:#4a5568;margin-top:4px;">👤 ${a.socio} · ${a.sinEmail ? '⚠️ <strong>Sin email</strong>' : `📧 ${a.email}`}${a.telefono ? ` · 📱 ${a.telefono}` : ''}</div><div style="font-size:0.8rem;color:#e53e3e;margin-top:2px;">⏰ ${a.dias} días de retraso ${emailYaEnviado(a.prestamoId, 'manual') ? ' · 📧 Email enviado' : ''}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;">${a.sinEmail ? `<button class="btn btn-sm btn-warning" onclick="abrirModalEditarEmail('${a.prestamoId}')">✏️📧 Añadir email</button>` : `<button class="btn btn-sm btn-info" onclick="enviarEmailManual('${a.prestamoId}')">📧 Email</button>`}<button class="btn btn-sm btn-success" onclick="devolverPrestamo('${a.prestamoId}')">✅ Devolver</button></div></div></div>`).join('')}</div>`;
-        }
-    }
+        mostrarToast(`📧 Email enviado a ${prestamo.email}`, 'success');
+        return true;
+    } catch(e) { mostrarToast('❌ Error: ' + (e.text || e.message), 'error'); return false; }
+}
 
-    function iniciarAlertasAutomaticas() {
-        if (intervaloAlertas) clearInterval(intervaloAlertas);
-        intervaloAlertas = setInterval(() => { actualizarAlertas(); }, 60000);
-    }
-
-    // ============================================================
-    //  BADGES
-    //  ============================================================
-    function actualizarBadges() {
-        const activos = prestamos.filter(p => p.estado === 'activo' || p.estado === 'retrasado');
-        const badge = document.getElementById('prestamosBadge');
-        if (activos.length > 0) { badge.style.display = 'inline'; badge.textContent = activos.length; }
-        else { badge.style.display = 'none'; }
+async function enviarEmailManual(prestamoId) {
+    if(await enviarEmailRecordatorio(prestamoId, 'manual')) {
+        registrarEmailEnviado(prestamoId, 'manual');
+        renderizarPrestamos();
         actualizarAlertas();
     }
+}
 
-    // ============================================================
-    //  ESTADÍSTICAS
-    //  ============================================================
-    function actualizarEstadisticas() {
-        document.getElementById('totalLibros').textContent = libros.length;
-        document.getElementById('totalIdiomas').textContent = new Set(libros.map(l => l.idioma).filter(Boolean)).size;
-        document.getElementById('totalProcedencias').textContent = new Set(libros.map(l => l.procedencia).filter(Boolean)).size;
-        document.getElementById('totalMaterias').textContent = new Set(libros.map(l => l.materia).filter(Boolean)).size;
-    }
+// ============================================================
+// MODAL EDITAR EMAIL - FUNCIONES GLOBALES
+// ============================================================
+function abrirModalEditarEmail(prestamoId) {
+    const prestamo = prestamos.find(p => p.id == prestamoId);
+    if(!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return; }
+    document.getElementById('modalEditarEmailTitulo').textContent = `✏️ Editar datos de "${prestamo.socio}"`;
+    document.getElementById('editEmailPrestamoId').value = prestamoId;
+    document.getElementById('editEmailSocio').value = prestamo.socio;
+    document.getElementById('editEmailInput').value = prestamo.email || '';
+    document.getElementById('editEmailTelefono').value = prestamo.telefono || '';
+    document.getElementById('modalEditarEmail').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
 
-    function actualizarEstadisticasPrestamos() {
-        document.getElementById('totalPrestamos').textContent = prestamos.length;
-        document.getElementById('prestamosActivos').textContent = prestamos.filter(p => p.estado === 'activo').length;
-        document.getElementById('prestamosRetrasados').textContent = prestamos.filter(p => p.estado === 'retrasado').length;
-        document.getElementById('prestamosDevueltos').textContent = prestamos.filter(p => p.estado === 'devuelto').length;
-    }
+function cerrarModalEditarEmail() {
+    document.getElementById('modalEditarEmail').classList.remove('active');
+    document.body.style.overflow = '';
+}
 
-    // ============================================================
-    //  FILTROS
-    //  ============================================================
-    function cargarFiltros() {
-        const idiomas = [...new Set(libros.map(l => l.idioma).filter(Boolean))].sort();
-        const procedencias = [...new Set(libros.map(l => l.procedencia).filter(Boolean))].sort();
-        const materias = [...new Set(libros.map(l => l.materia).filter(Boolean))].sort();
-        const selectIdioma = document.getElementById('filtroIdioma');
-        const selectProc = document.getElementById('filtroProcedencia');
-        const selectMat = document.getElementById('filtroMateria');
-        if (selectIdioma.options.length <= 1) { idiomas.forEach(idi => { const opt = document.createElement('option'); opt.value = idi; opt.textContent = idi; selectIdioma.appendChild(opt); }); }
-        if (selectProc.options.length <= 1) { procedencias.forEach(proc => { const opt = document.createElement('option'); opt.value = proc; opt.textContent = proc; selectProc.appendChild(opt); }); }
-        if (selectMat.options.length <= 1) { materias.forEach(mat => { const opt = document.createElement('option'); opt.value = mat; opt.textContent = mat; selectMat.appendChild(opt); }); }
-    }
+function guardarEditarEmail(e) {
+    e.preventDefault();
+    const id = document.getElementById('editEmailPrestamoId').value;
+    const email = document.getElementById('editEmailInput').value.trim();
+    const telefono = document.getElementById('editEmailTelefono').value.trim();
+    if(!email) { mostrarToast('❌ El email es obligatorio', 'error'); return; }
+    const prestamo = prestamos.find(p => p.id == id);
+    if(!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return; }
+    prestamo.email = email;
+    prestamo.telefono = telefono || prestamo.telefono || '';
+    guardarPrestamos();
+    cerrarModalEditarEmail();
+    renderizarPrestamos();
+    actualizarAlertas();
+    mostrarToast(`✅ Email actualizado para "${prestamo.socio}"`, 'success');
+    if(tokenAcceso) realizarBackup(false);
+}
 
-    // ============================================================
-    //  RENDERIZAR TABLA DE LIBROS
-    //  ============================================================
-    function getLibrosFiltrados() {
-        const busqueda = document.getElementById('searchInput').value.toLowerCase().trim();
-        const idioma = document.getElementById('filtroIdioma').value;
-        const procedencia = document.getElementById('filtroProcedencia').value;
-        const materia = document.getElementById('filtroMateria').value;
-        return libros.filter(libro => {
-            const matchBusqueda = !busqueda || libro.titulo.toLowerCase().includes(busqueda) || (libro.autor && libro.autor.toLowerCase().includes(busqueda)) || (libro.editorial && libro.editorial.toLowerCase().includes(busqueda)) || (libro.ciudad && libro.ciudad.toLowerCase().includes(busqueda)) || (libro.materia && libro.materia.toLowerCase().includes(busqueda)) || (libro.numero && libro.numero.toLowerCase().includes(busqueda));
-            const matchIdioma = !idioma || libro.idioma === idioma;
-            const matchProcedencia = !procedencia || libro.procedencia === procedencia;
-            const matchMateria = !materia || (libro.materia && libro.materia.includes(materia));
-            return matchBusqueda && matchIdioma && matchProcedencia && matchMateria;
-        });
-    }
+// ============================================================
+// GESTIÓN DE LIBROS
+// ============================================================
+function cargarLibros() {
+    const d = localStorage.getItem(STORAGE_KEY);
+    if(d) { try { libros = JSON.parse(d); if(!Array.isArray(libros)) libros = []; } catch(e) { libros = []; } }
+    else { libros = [ { id: 892, numero: '001', titulo: '"LES CEDRES"', autor: 'Varios', editorial: 'FRANKLIN PICARD', ciudad: 'PARIS', anio: 1999, idioma: 'Inglés', procedencia: 'Legado José Antonio del Cañizo', materia: '71 - Jardinería', ubicacion: 'DIR13', seccion: 'Sección Adultos' } ]; guardarLibros(); }
+    return libros;
+}
+function guardarLibros() { localStorage.setItem(STORAGE_KEY, JSON.stringify(libros)); actualizarEstadisticas(); renderizarTabla(); }
 
-    function renderizarTabla() {
-        const filtrados = getLibrosFiltrados();
-        const total = filtrados.length;
-        const totalPaginas = Math.ceil(total / POR_PAGINA);
-        if (paginaActual > totalPaginas && totalPaginas > 0) paginaActual = totalPaginas;
-        if (paginaActual < 1) paginaActual = 1;
-        const inicio = (paginaActual - 1) * POR_PAGINA;
-        const fin = Math.min(inicio + POR_PAGINA, total);
-        const paginaLibros = filtrados.slice(inicio, fin);
-        const tbody = document.getElementById('tablaBody');
-        if (total === 0) {
-            tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📭</div><p>No hay libros que coincidan con tu búsqueda</p><p style="font-size:0.85rem; margin-top:8px;">Prueba con otros términos o añade un nuevo libro</p></div></td></tr>`;
-        } else {
-            tbody.innerHTML = paginaLibros.map(libro => {
-                const disponible = getLibroDisponible(libro.id);
-                const prestamoActivo = getPrestamoActivoPorLibro(libro.id);
-                let estadoTexto = '✅ Disponible', estadoColor = '#38a169';
-                if (!disponible && prestamoActivo) { estadoTexto = `📖 Prestado a ${prestamoActivo.socio}`; estadoColor = '#e53e3e'; }
-                return `<tr><td><strong>${libro.id}</strong></td><td>${libro.numero || '-'}</td><td style="max-width:200px;word-wrap:break-word;">${escapeHTML(libro.titulo)}</td><td style="max-width:150px;word-wrap:break-word;">${escapeHTML(libro.autor || '')}</td><td style="max-width:150px;word-wrap:break-word;">${escapeHTML(libro.editorial || '')}</td><td>${libro.anio || ''}</td><td><span class="badge badge-${getIdiomaClase(libro.idioma)}">${libro.idioma || 'Desconocido'}</span></td><td><span class="badge-procedencia ${getProcedenciaClase(libro.procedencia)}">${libro.procedencia || 'Sin clasificar'}</span></td><td style="color:${estadoColor};font-weight:600;font-size:0.75rem;">${estadoTexto}</td><td><button class="btn-accion editar" onclick="editarLibro('${libro.id}')" title="Editar">✏️</button><button class="btn-accion eliminar" onclick="eliminarLibro('${libro.id}')" title="Eliminar">🗑️</button>${disponible ? `<button class="btn-accion prestar" onclick="abrirModalPrestamoConLibro('${libro.id}')" title="Prestar libro">📋 Prestar</button>` : `<button class="btn-accion devolver" onclick="devolverPrestamo('${prestamoActivo?.id}')" title="Devolver libro">✅ Devolver</button>`}</td></tr>`;
-            }).join('');
+// ============================================================
+// GESTIÓN DE PRÉSTAMOS
+// ============================================================
+function cargarPrestamos() {
+    const d = localStorage.getItem(PRESTAMOS_KEY);
+    if(d) { try { prestamos = JSON.parse(d); if(!Array.isArray(prestamos)) prestamos = []; } catch(e) { prestamos = []; } }
+    else { prestamos = []; guardarPrestamos(); }
+    return prestamos;
+}
+function guardarPrestamos() {
+    localStorage.setItem(PRESTAMOS_KEY, JSON.stringify(prestamos));
+    actualizarEstadisticasPrestamos();
+    actualizarBadges();
+    actualizarAlertas();
+    renderizarPrestamos();
+    renderizarTabla();
+}
+
+// ============================================================
+// ALERTAS
+// ============================================================
+function actualizarAlertas() {
+    const container = document.getElementById('alertasContainer');
+    const hoy = new Date();
+    const alertas = [];
+    prestamos.forEach(p => {
+        if(p.estado === 'devuelto') return;
+        const diff = Math.floor((hoy - new Date(p.fechaPrestamo)) / (1000*60*60*24));
+        if(diff > 30) {
+            const libro = getLibroById(p.libroId);
+            alertas.push({ mensaje: `📖 "${libro?.titulo || 'Libro desconocido'}" lleva ${diff} días sin devolver.`, socio: p.socio, email: p.email, telefono: p.telefono, prestamoId: p.id, dias: diff, sinEmail: !p.email || p.email.trim() === '' });
         }
-        document.getElementById('infoPaginacion').textContent = `Mostrando ${total > 0 ? inicio+1 : 0} - ${fin} de ${total} libros`;
-        const controles = document.getElementById('paginacionControles');
-        if (totalPaginas <= 1) { controles.innerHTML = ''; }
-        else { let html = ''; for (let i = 1; i <= totalPaginas; i++) { html += `<button class="btn ${i === paginaActual ? 'btn-success' : 'btn-outline'}" style="${i === paginaActual ? '' : 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;'}" onclick="irPagina(${i})">${i}</button>`; } controles.innerHTML = html; }
+    });
+    const badge = document.getElementById('alertasBadge');
+    if(alertas.length > 0) { badge.style.display = 'inline'; badge.textContent = alertas.length; }
+    else { badge.style.display = 'none'; }
+    if(alertas.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>No hay alertas</p></div>`;
+    } else {
+        container.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;"><div style="background:#fee2e2;padding:12px 16px;border-radius:12px;border-left:4px solid #e53e3e;"><strong>🔴 ${alertas.length} préstamo(s) retrasado(s)</strong></div>${alertas.map(a => `<div style="background:white;padding:14px;border-radius:12px;border-left:4px solid #e53e3e;"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;"><div><div style="font-weight:600;">${a.mensaje}</div><div style="font-size:.85rem;color:#4a5568;">👤 ${a.socio} · ${a.sinEmail ? '⚠️ Sin email' : `📧 ${a.email}`}</div><div style="font-size:.8rem;color:#e53e3e;">⏰ ${a.dias} días</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;">${a.sinEmail ? `<button class="btn btn-sm btn-warning" onclick="abrirModalEditarEmail('${a.prestamoId}')">✏️📧 Añadir email</button>` : `<button class="btn btn-sm btn-info" onclick="enviarEmailManual('${a.prestamoId}')">📧 Email</button>`}<button class="btn btn-sm btn-success" onclick="devolverPrestamo('${a.prestamoId}')">✅ Devolver</button></div></div></div>`).join('')}</div>`;
     }
+}
 
-    function irPagina(pagina) { paginaActual = pagina; renderizarTabla(); document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+function iniciarAlertasAutomaticas() {
+    if(intervaloAlertas) clearInterval(intervaloAlertas);
+    intervaloAlertas = setInterval(() => { actualizarAlertas(); }, 60000);
+}
 
-    function limpiarFiltros() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('filtroIdioma').value = '';
-        document.getElementById('filtroProcedencia').value = '';
-        document.getElementById('filtroMateria').value = '';
-        paginaActual = 1;
-        renderizarTabla();
+// ============================================================
+// BADGES
+// ============================================================
+function actualizarBadges() {
+    const activos = prestamos.filter(p => p.estado === 'activo' || p.estado === 'retrasado');
+    const badge = document.getElementById('prestamosBadge');
+    if(activos.length > 0) { badge.style.display = 'inline'; badge.textContent = activos.length; }
+    else { badge.style.display = 'none'; }
+    actualizarAlertas();
+}
+
+// ============================================================
+// ESTADÍSTICAS
+// ============================================================
+function actualizarEstadisticas() {
+    document.getElementById('totalLibros').textContent = libros.length;
+    document.getElementById('totalIdiomas').textContent = new Set(libros.map(l => l.idioma).filter(Boolean)).size;
+    document.getElementById('totalProcedencias').textContent = new Set(libros.map(l => l.procedencia).filter(Boolean)).size;
+    document.getElementById('totalMaterias').textContent = new Set(libros.map(l => l.materia).filter(Boolean)).size;
+}
+function actualizarEstadisticasPrestamos() {
+    document.getElementById('totalPrestamos').textContent = prestamos.length;
+    document.getElementById('prestamosActivos').textContent = prestamos.filter(p => p.estado === 'activo').length;
+    document.getElementById('prestamosRetrasados').textContent = prestamos.filter(p => p.estado === 'retrasado').length;
+    document.getElementById('prestamosDevueltos').textContent = prestamos.filter(p => p.estado === 'devuelto').length;
+}
+
+// ============================================================
+// FILTROS
+// ============================================================
+function cargarFiltros() {
+    const idiomas = [...new Set(libros.map(l => l.idioma).filter(Boolean))].sort();
+    const procedencias = [...new Set(libros.map(l => l.procedencia).filter(Boolean))].sort();
+    const materias = [...new Set(libros.map(l => l.materia).filter(Boolean))].sort();
+    const si = document.getElementById('filtroIdioma');
+    const sp = document.getElementById('filtroProcedencia');
+    const sm = document.getElementById('filtroMateria');
+    if(si.options.length <= 1) { idiomas.forEach(i => { const o = document.createElement('option'); o.value = i; o.textContent = i; si.appendChild(o); }); }
+    if(sp.options.length <= 1) { procedencias.forEach(i => { const o = document.createElement('option'); o.value = i; o.textContent = i; sp.appendChild(o); }); }
+    if(sm.options.length <= 1) { materias.forEach(i => { const o = document.createElement('option'); o.value = i; o.textContent = i; sm.appendChild(o); }); }
+}
+
+// ============================================================
+// RENDERIZAR LIBROS
+// ============================================================
+function getLibrosFiltrados() {
+    const busqueda = document.getElementById('searchInput').value.toLowerCase().trim();
+    const idioma = document.getElementById('filtroIdioma').value;
+    const procedencia = document.getElementById('filtroProcedencia').value;
+    const materia = document.getElementById('filtroMateria').value;
+    return libros.filter(l => {
+        const m = !busqueda || l.titulo.toLowerCase().includes(busqueda) || (l.autor && l.autor.toLowerCase().includes(busqueda)) || (l.editorial && l.editorial.toLowerCase().includes(busqueda)) || (l.materia && l.materia.toLowerCase().includes(busqueda));
+        const i = !idioma || l.idioma === idioma;
+        const p = !procedencia || l.procedencia === procedencia;
+        const mat = !materia || (l.materia && l.materia.includes(materia));
+        return m && i && p && mat;
+    });
+}
+
+function renderizarTabla() {
+    const filtrados = getLibrosFiltrados();
+    const total = filtrados.length;
+    const totalPaginas = Math.ceil(total / POR_PAGINA);
+    if(paginaActual > totalPaginas && totalPaginas > 0) paginaActual = totalPaginas;
+    if(paginaActual < 1) paginaActual = 1;
+    const inicio = (paginaActual - 1) * POR_PAGINA;
+    const fin = Math.min(inicio + POR_PAGINA, total);
+    const pagina = filtrados.slice(inicio, fin);
+    const tbody = document.getElementById('tablaBody');
+    if(total === 0) { tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📭</div><p>No hay libros</p></div></td></tr>`; }
+    else {
+        tbody.innerHTML = pagina.map(libro => {
+            const disp = getLibroDisponible(libro.id);
+            const prestamo = getPrestamoActivo(libro.id);
+            let estado = '✅ Disponible', color = '#38a169';
+            if(!disp && prestamo) { estado = `📖 Prestado a ${prestamo.socio}`; color = '#e53e3e'; }
+            return `<tr><td><strong>${libro.id}</strong></td><td>${libro.numero || '-'}</td><td style="max-width:200px;word-wrap:break-word;">${escapeHTML(libro.titulo)}</td><td style="max-width:150px;">${escapeHTML(libro.autor || '')}</td><td style="max-width:150px;">${escapeHTML(libro.editorial || '')}</td><td>${libro.anio || ''}</td><td><span class="badge badge-${(['es','en','fr','it','ca','pt'])[['Español','Inglés','Francés','Italiano','Catalán','Portugués'].indexOf(libro.idioma)] || 'es'}">${libro.idioma || ''}</span></td><td><span class="badge-procedencia ${libro.procedencia && libro.procedencia.includes('Cañizo')?'canizo':libro.procedencia && libro.procedencia.includes('Patronato')?'patronato':libro.procedencia && libro.procedencia.includes('Amigos')?'amigos':''}">${libro.procedencia || ''}</span></td><td style="color:${color};font-weight:600;font-size:.75rem;">${estado}</td><td><button class="btn-accion editar" onclick="editarLibro('${libro.id}')">✏️</button><button class="btn-accion eliminar" onclick="eliminarLibro('${libro.id}')">🗑️</button>${disp ? `<button class="btn-accion prestar" onclick="abrirModalPrestamoConLibro('${libro.id}')">📋 Prestar</button>` : `<button class="btn-accion devolver" onclick="devolverPrestamo('${prestamo?.id}')">✅ Devolver</button>`}</td></tr>`;
+        }).join('');
     }
+    document.getElementById('infoPaginacion').textContent = `Mostrando ${total > 0 ? inicio+1 : 0} - ${fin} de ${total}`;
+    const c = document.getElementById('paginacionControles');
+    if(totalPaginas <= 1) c.innerHTML = '';
+    else { let h = ''; for(let i=1; i<=totalPaginas; i++) h += `<button class="btn ${i===paginaActual?'btn-success':'btn-outline'}" style="${i===paginaActual?'':'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;'}" onclick="irPagina(${i})">${i}</button>`; c.innerHTML = h; }
+}
 
-    // ============================================================
-    //  CRUD LIBROS
-    //  ============================================================
-    function abrirModal(libro = null) {
-        const modal = document.getElementById('modalForm');
-        const titulo = document.getElementById('modalTitulo');
-        const btnGuardar = document.getElementById('btnGuardar');
-        if (libro) {
-            titulo.textContent = '✏️ Editar Libro';
-            btnGuardar.textContent = '💾 Actualizar Libro';
-            document.getElementById('editId').value = libro.id;
-            document.getElementById('nInventario').value = libro.id;
-            document.getElementById('numero').value = libro.numero || '';
-            document.getElementById('titulo').value = libro.titulo || '';
-            document.getElementById('autor').value = libro.autor || '';
-            document.getElementById('editorial').value = libro.editorial || '';
-            document.getElementById('ciudad').value = libro.ciudad || '';
-            document.getElementById('anio').value = libro.anio || '';
-            document.getElementById('idioma').value = libro.idioma || 'Español';
-            document.getElementById('procedencia').value = libro.procedencia || 'Legado José Antonio del Cañizo';
-            document.getElementById('materia').value = libro.materia || '';
-            document.getElementById('ubicacion').value = libro.ubicacion || '';
-            document.getElementById('seccion').value = libro.seccion || 'Sección Adultos';
-        } else {
-            titulo.textContent = '📖 Nuevo Libro';
-            btnGuardar.textContent = '💾 Guardar Libro';
-            document.getElementById('editId').value = '';
-            document.getElementById('libroForm').reset();
-            const maxId = libros.reduce((max, l) => { const num = parseInt(l.id); return !isNaN(num) && num > max ? num : max; }, 0);
-            document.getElementById('nInventario').value = maxId + 1;
-        }
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => document.getElementById('titulo').focus(), 100);
+function irPagina(p) { paginaActual = p; renderizarTabla(); }
+function limpiarFiltros() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filtroIdioma').value = '';
+    document.getElementById('filtroProcedencia').value = '';
+    document.getElementById('filtroMateria').value = '';
+    paginaActual = 1; renderizarTabla();
+}
+
+// ============================================================
+// CRUD LIBROS
+// ============================================================
+function abrirModal(libro = null) {
+    const modal = document.getElementById('modalForm');
+    const titulo = document.getElementById('modalTitulo');
+    const btn = document.getElementById('btnGuardar');
+    if(libro) {
+        titulo.textContent = '✏️ Editar Libro';
+        btn.textContent = '💾 Actualizar';
+        document.getElementById('editId').value = libro.id;
+        document.getElementById('nInventario').value = libro.id;
+        document.getElementById('numero').value = libro.numero || '';
+        document.getElementById('titulo').value = libro.titulo || '';
+        document.getElementById('autor').value = libro.autor || '';
+        document.getElementById('editorial').value = libro.editorial || '';
+        document.getElementById('ciudad').value = libro.ciudad || '';
+        document.getElementById('anio').value = libro.anio || '';
+        document.getElementById('idioma').value = libro.idioma || 'Español';
+        document.getElementById('procedencia').value = libro.procedencia || 'Legado José Antonio del Cañizo';
+        document.getElementById('materia').value = libro.materia || '';
+        document.getElementById('ubicacion').value = libro.ubicacion || '';
+        document.getElementById('seccion').value = libro.seccion || 'Sección Adultos';
+    } else {
+        titulo.textContent = '📖 Nuevo Libro';
+        btn.textContent = '💾 Guardar';
+        document.getElementById('editId').value = '';
+        document.getElementById('libroForm').reset();
+        const maxId = libros.reduce((m,l) => { const n=parseInt(l.id); return !isNaN(n) && n>m ? n : m; }, 0);
+        document.getElementById('nInventario').value = maxId + 1;
     }
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function cerrarModal() { document.getElementById('modalForm').classList.remove('active'); document.body.style.overflow = ''; }
+function guardarLibro(e) {
+    e.preventDefault();
+    const id = document.getElementById('editId').value || document.getElementById('nInventario').value;
+    const titulo = document.getElementById('titulo').value.trim();
+    if(!titulo) { mostrarToast('El título es obligatorio', 'error'); return; }
+    const libro = {
+        id, numero: document.getElementById('numero').value.trim(), titulo,
+        autor: document.getElementById('autor').value.trim(),
+        editorial: document.getElementById('editorial').value.trim(),
+        ciudad: document.getElementById('ciudad').value.trim(),
+        anio: document.getElementById('anio').value || '',
+        idioma: document.getElementById('idioma').value,
+        procedencia: document.getElementById('procedencia').value,
+        materia: document.getElementById('materia').value.trim(),
+        ubicacion: document.getElementById('ubicacion').value.trim(),
+        seccion: document.getElementById('seccion').value
+    };
+    if(libros.some(l => l.id == id && l.id != document.getElementById('editId').value)) { mostrarToast('Ya existe un libro con ese número', 'error'); return; }
+    if(document.getElementById('editId').value) {
+        const idx = libros.findIndex(l => l.id == id);
+        if(idx !== -1) { libros[idx] = libro; mostrarToast('✅ Libro actualizado', 'success'); }
+    } else { libros.push(libro); mostrarToast('✅ Libro añadido', 'success'); }
+    guardarLibros(); cerrarModal(); renderizarTabla(); actualizarEstadisticas(); cargarFiltros(); actualizarAlertas(); if(tokenAcceso) realizarBackup(false);
+}
+function editarLibro(id) { const l = libros.find(x => x.id == id); if(l) abrirModal(l); else mostrarToast('Libro no encontrado', 'error'); }
+function eliminarLibro(id) {
+    const prestamo = getPrestamoActivo(id);
+    if(prestamo) { mostrarToast(`❌ El libro está prestado a ${prestamo.socio}`, 'error'); return; }
+    if(!confirm('¿Eliminar este libro?')) return;
+    libros = libros.filter(l => l.id != id);
+    guardarLibros(); renderizarTabla(); actualizarEstadisticas(); cargarFiltros(); mostrarToast('🗑️ Libro eliminado', 'info'); if(tokenAcceso) realizarBackup(false);
+}
 
-    function cerrarModal() {
-        document.getElementById('modalForm').classList.remove('active');
-        document.body.style.overflow = '';
+// ============================================================
+// CRUD PRÉSTAMOS
+// ============================================================
+function abrirModalPrestamo() {
+    const modal = document.getElementById('modalPrestamo');
+    document.getElementById('modalPrestamoTitulo').textContent = '📋 Nuevo Préstamo';
+    document.getElementById('editPrestamoId').value = '';
+    document.getElementById('prestamoForm').reset();
+    document.getElementById('btnGuardarPrestamo').textContent = '📋 Registrar';
+    const select = document.getElementById('prestamoLibro');
+    select.innerHTML = '<option value="">Selecciona un libro...</option>';
+    libros.forEach(l => { if(getLibroDisponible(l.id)) { const o = document.createElement('option'); o.value = l.id; o.textContent = `${l.id} - ${l.titulo.substring(0, 50)}...`; select.appendChild(o); } });
+    document.getElementById('prestamoFecha').value = new Date().toISOString().split('T')[0];
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function abrirModalPrestamoConLibro(id) { abrirModalPrestamo(); document.getElementById('prestamoLibro').value = id; }
+function cerrarModalPrestamo() { document.getElementById('modalPrestamo').classList.remove('active'); document.body.style.overflow = ''; }
+function guardarPrestamo(e) {
+    e.preventDefault();
+    const libroId = document.getElementById('prestamoLibro').value;
+    const socio = document.getElementById('prestamoSocio').value.trim();
+    const email = document.getElementById('prestamoEmail').value.trim();
+    const telefono = document.getElementById('prestamoTelefono').value.trim();
+    const fecha = document.getElementById('prestamoFecha').value;
+    const obs = document.getElementById('prestamoObservaciones').value.trim();
+    if(!libroId || !socio || !email || !fecha) { mostrarToast('❌ Completa todos los campos obligatorios', 'error'); return; }
+    if(!getLibroDisponible(libroId)) { mostrarToast('❌ El libro no está disponible', 'error'); return; }
+    const prestamo = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2,5),
+        libroId, socio, email, telefono: telefono || '',
+        fechaPrestamo: fecha, fechaDevolucion: '', estado: 'activo',
+        observaciones: obs || '', createdAt: new Date().toISOString()
+    };
+    prestamos.push(prestamo);
+    guardarPrestamos();
+    cerrarModalPrestamo();
+    renderizarPrestamos();
+    actualizarEstadisticasPrestamos();
+    actualizarBadges();
+    actualizarAlertas();
+    renderizarTabla();
+    mostrarToast(`✅ Préstamo registrado para "${socio}"`, 'success');
+    if(tokenAcceso) realizarBackup(false);
+}
+
+// ============================================================
+// RENDERIZAR PRÉSTAMOS (CON BOTÓN EDITAR EMAIL)
+// ============================================================
+function renderizarPrestamos() {
+    const busqueda = document.getElementById('searchPrestamos').value.toLowerCase().trim();
+    const estado = document.getElementById('filtroEstadoPrestamo').value;
+    let filtrados = prestamos;
+    if(busqueda) { filtrados = filtrados.filter(p => { const l = getLibroById(p.libroId); return p.socio.toLowerCase().includes(busqueda) || p.email.toLowerCase().includes(busqueda) || (l && l.titulo.toLowerCase().includes(busqueda)); }); }
+    if(estado) { filtrados = filtrados.filter(p => p.estado === estado); }
+    filtrados.sort((a,b) => new Date(b.fechaPrestamo) - new Date(a.fechaPrestamo));
+    const total = filtrados.length;
+    const totalPaginas = Math.ceil(total / POR_PAGINA);
+    if(paginaPrestamos > totalPaginas && totalPaginas > 0) paginaPrestamos = totalPaginas;
+    if(paginaPrestamos < 1) paginaPrestamos = 1;
+    const inicio = (paginaPrestamos - 1) * POR_PAGINA;
+    const fin = Math.min(inicio + POR_PAGINA, total);
+    const pagina = filtrados.slice(inicio, fin);
+    const tbody = document.getElementById('tablaPrestamos');
+    if(total === 0) { tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📋</div><p>No hay préstamos</p></div></td></tr>`; }
+    else {
+        tbody.innerHTML = pagina.map(p => {
+            const libro = getLibroById(p.libroId);
+            const diff = Math.floor((new Date() - new Date(p.fechaPrestamo)) / (1000*60*60*24));
+            if(p.estado === 'activo' && diff > 30) { p.estado = 'retrasado'; const idx = prestamos.findIndex(pr => pr.id === p.id); if(idx !== -1) prestamos[idx].estado = 'retrasado'; guardarPrestamos(); }
+            const badge = p.estado === 'devuelto' ? 'devuelto' : p.estado === 'retrasado' ? 'retrasado' : 'activo';
+            const texto = p.estado === 'devuelto' ? '✅ Devuelto' : p.estado === 'retrasado' ? '🔴 Retrasado' : '🟢 Activo';
+            const emailEnviado = emailYaEnviado(p.id, 'manual') || emailYaEnviado(p.id, 'dia30');
+            const tieneEmail = p.email && p.email.trim() !== '';
+            return `<tr>
+                <td><strong>${p.id.substring(0,8)}</strong></td>
+                <td style="max-width:200px;">${libro ? escapeHTML(libro.titulo) : '⚠️ Eliminado'}</td>
+                <td>${escapeHTML(p.socio)}</td>
+                <td style="font-size:.75rem;">${tieneEmail ? escapeHTML(p.email) : '<span class="badge-sin-email">⚠️ Sin email</span>'}</td>
+                <td>${p.telefono || '-'}</td>
+                <td style="font-size:.75rem;">${new Date(p.fechaPrestamo).toLocaleDateString('es-ES')}</td>
+                <td style="font-size:.75rem;">${p.fechaDevolucion ? new Date(p.fechaDevolucion).toLocaleDateString('es-ES') : '-'}</td>
+                <td><span class="badge-estado ${badge}">${texto}</span></td>
+                <td>${emailEnviado ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:.55rem;">📧 Enviado</span>' : '<span style="font-size:.6rem;color:#718096;">Pendiente</span>'}</td>
+                <td>
+                    ${p.estado !== 'devuelto' ? `
+                        <button class="btn-accion editar-email" onclick="abrirModalEditarEmail('${p.id}')" title="Editar email">✏️📧</button>
+                        <button class="btn-accion devolver" onclick="devolverPrestamo('${p.id}')">✅</button>
+                        ${tieneEmail ? `<button class="btn-accion email" onclick="enviarEmailManual('${p.id}')">📧</button>` : ''}
+                    ` : ''}
+                    <button class="btn-accion eliminar" onclick="eliminarPrestamo('${p.id}')">🗑️</button>
+                </td>
+            </tr>`;
+        }).join('');
     }
+    document.getElementById('infoPaginacionPrestamos').textContent = `Mostrando ${total > 0 ? inicio+1 : 0} - ${fin} de ${total}`;
+    const c = document.getElementById('paginacionControlesPrestamos');
+    if(totalPaginas <= 1) c.innerHTML = '';
+    else { let h = ''; for(let i=1; i<=totalPaginas; i++) h += `<button class="btn ${i===paginaPrestamos?'btn-success':'btn-outline'}" style="${i===paginaPrestamos?'':'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;'}" onclick="irPaginaPrestamos(${i})">${i}</button>`; c.innerHTML = h; }
+}
 
-    function guardarLibro(e) {
-        e.preventDefault();
-        const id = document.getElementById('editId').value || document.getElementById('nInventario').value;
-        const titulo = document.getElementById('titulo').value.trim();
-        if (!titulo) { mostrarToast('El título es obligatorio', 'error'); return; }
-        const libroData = {
-            id, numero: document.getElementById('numero').value.trim(), titulo,
-            autor: document.getElementById('autor').value.trim(),
-            editorial: document.getElementById('editorial').value.trim(),
-            ciudad: document.getElementById('ciudad').value.trim(),
-            anio: document.getElementById('anio').value || '',
-            idioma: document.getElementById('idioma').value,
-            procedencia: document.getElementById('procedencia').value,
-            materia: document.getElementById('materia').value.trim(),
-            ubicacion: document.getElementById('ubicacion').value.trim(),
-            seccion: document.getElementById('seccion').value
+function irPaginaPrestamos(p) { paginaPrestamos = p; renderizarPrestamos(); }
+function limpiarFiltrosPrestamos() { document.getElementById('searchPrestamos').value = ''; document.getElementById('filtroEstadoPrestamo').value = ''; paginaPrestamos = 1; renderizarPrestamos(); }
+
+// ============================================================
+// DEVOLVER / ELIMINAR PRÉSTAMOS
+// ============================================================
+function devolverPrestamo(id) {
+    if(!id) { mostrarToast('❌ No se encontró el préstamo', 'error'); return; }
+    const p = prestamos.find(x => x.id == id);
+    if(!p) { mostrarToast('❌ Préstamo no encontrado', 'error'); return; }
+    if(!confirm(`¿Marcar como devuelto el préstamo de "${p.socio}"?`)) return;
+    p.estado = 'devuelto';
+    p.fechaDevolucion = new Date().toISOString().split('T')[0];
+    guardarPrestamos();
+    renderizarPrestamos();
+    actualizarEstadisticasPrestamos();
+    actualizarBadges();
+    actualizarAlertas();
+    renderizarTabla();
+    mostrarToast(`✅ Préstamo devuelto por "${p.socio}"`, 'success');
+    if(tokenAcceso) realizarBackup(false);
+}
+
+function eliminarPrestamo(id) {
+    const p = prestamos.find(x => x.id == id);
+    if(!p) return;
+    if(!confirm(`¿Eliminar el préstamo de "${p.socio}"?`)) return;
+    prestamos = prestamos.filter(x => x.id != id);
+    guardarPrestamos();
+    renderizarPrestamos();
+    actualizarEstadisticasPrestamos();
+    actualizarBadges();
+    actualizarAlertas();
+    renderizarTabla();
+    mostrarToast('🗑️ Préstamo eliminado', 'info');
+    if(tokenAcceso) realizarBackup(false);
+}
+
+// ============================================================
+// VERIFICACIÓN AUTOMÁTICA DE EMAILS
+// ============================================================
+function iniciarVerificacionEmails() {
+    if(intervaloEmails) clearInterval(intervaloEmails);
+    intervaloEmails = setInterval(() => verificarYEnviarEmailsAutomaticos(), 3600000);
+    setTimeout(() => verificarYEnviarEmailsAutomaticos(), 5000);
+}
+
+async function verificarYEnviarEmailsAutomaticos() {
+    const hoy = new Date();
+    for(const p of prestamos) {
+        if(p.estado === 'devuelto') continue;
+        if(!p.email || p.email.trim() === '') continue;
+        const diff = Math.floor((hoy - new Date(p.fechaPrestamo)) / (1000*60*60*24));
+        if(diff === 30 && !emailYaEnviado(p.id, 'dia30')) { await enviarEmailRecordatorio(p.id, 'dia30'); registrarEmailEnviado(p.id, 'dia30'); }
+        if(diff === 45 && !emailYaEnviado(p.id, 'dia45')) { await enviarEmailRecordatorio(p.id, 'dia45'); registrarEmailEnviado(p.id, 'dia45'); }
+        if(diff === 60 && !emailYaEnviado(p.id, 'dia60')) { await enviarEmailRecordatorio(p.id, 'dia60'); registrarEmailEnviado(p.id, 'dia60'); }
+        if(diff > 60 && diff % 15 === 0) { const tipo = `dia${diff}`; if(!emailYaEnviado(p.id, tipo)) { await enviarEmailRecordatorio(p.id, tipo); registrarEmailEnviado(p.id, tipo); } }
+    }
+}
+
+// ============================================================
+// PESTAÑAS
+// ============================================================
+function cambiarPestana(pestana) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab${pestana.charAt(0).toUpperCase()+pestana.slice(1)}`).classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab${pestana.charAt(0).toUpperCase()+pestana.slice(1)}`).classList.add('active');
+    if(pestana === 'prestamos') { renderizarPrestamos(); actualizarEstadisticasPrestamos(); }
+    else if(pestana === 'alertas') { actualizarAlertas(); }
+}
+
+// ============================================================
+// EXPORTAR E IMPORTAR
+// ============================================================
+function exportarExcel() {
+    try {
+        const wb = XLSX.utils.book_new();
+        const data = libros.map(l => ({ 'Nº': l.id, 'Número': l.numero || '', 'Título': l.titulo, 'Autor': l.autor || '', 'Editorial': l.editorial || '', 'Ciudad': l.ciudad || '', 'Año': l.anio || '', 'Idioma': l.idioma || '', 'Materia': l.materia || '', 'Ubicación': l.ubicacion || '', 'Sección': l.seccion || '', 'Procedencia': l.procedencia || '' }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, 'Libros');
+        const pData = prestamos.map(p => { const l = getLibroById(p.libroId); return { 'ID': p.id, 'Libro': l ? l.titulo : 'Eliminado', 'Socio': p.socio, 'Email': p.email || '', 'Teléfono': p.telefono || '', 'Fecha Préstamo': p.fechaPrestamo, 'Fecha Devolución': p.fechaDevolucion || '', 'Estado': p.estado === 'devuelto' ? 'Devuelto' : p.estado === 'retrasado' ? 'Retrasado' : 'Activo' }; });
+        const wsP = XLSX.utils.json_to_sheet(pData);
+        XLSX.utils.book_append_sheet(wb, wsP, 'Préstamos');
+        XLSX.writeFile(wb, `Biblioteca_${new Date().toISOString().slice(0,10)}.xlsx`);
+        mostrarToast('📊 Excel exportado', 'success');
+    } catch(e) { mostrarToast('Error al exportar', 'error'); }
+}
+
+function importarDesdeExcel() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                const data = new Uint8Array(ev.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                const nuevos = json.map(row => ({
+                    id: row['Nº'] || row['N°'] || Date.now() + Math.random()*1000,
+                    numero: row['Número'] || '',
+                    titulo: row['TÍTULO'] || row['Título'] || '',
+                    autor: row['AUTOR'] || row['Autor'] || '',
+                    editorial: row['EDITORIAL'] || row['Editorial'] || '',
+                    ciudad: row['CIUDAD'] || row['Ciudad'] || '',
+                    anio: row['AÑO'] || row['Año'] || '',
+                    idioma: row['IDIOMA'] || row['Idioma'] || 'Español',
+                    procedencia: row['Procedencia'] || 'Legado José Antonio del Cañizo',
+                    materia: row['MATERIA'] || row['Materia'] || '',
+                    ubicacion: row['UBICACIÓN'] || row['Ubicación'] || '',
+                    seccion: row['SECCIÓN'] || row['Sección'] || 'Sección Adultos'
+                })).filter(l => l.titulo);
+                if(nuevos.length > 0) { libros = nuevos; guardarLibros(); renderizarTabla(); actualizarEstadisticas(); cargarFiltros(); mostrarToast(`✅ Importados ${nuevos.length} libros`, 'success'); if(tokenAcceso) realizarBackup(false); }
+            } catch(err) { mostrarToast('❌ Error al importar', 'error'); }
         };
-        if (libros.some(l => l.id == id && l.id != document.getElementById('editId').value)) {
-            mostrarToast('Ya existe un libro con ese número de inventario', 'error');
-            return;
-        }
-        if (document.getElementById('editId').value) {
-            const index = libros.findIndex(l => l.id == id);
-            if (index !== -1) { libros[index] = libroData; mostrarToast('✅ Libro actualizado correctamente', 'success'); }
-        } else {
-            libros.push(libroData);
-            mostrarToast('✅ Libro añadido correctamente', 'success');
-        }
-        guardarLibros();
-        cerrarModal();
-        renderizarTabla();
-        actualizarEstadisticas();
-        cargarFiltros();
-        actualizarAlertas();
-        if (tokenAcceso) realizarBackup(false);
-    }
+        reader.readAsArrayBuffer(file);
+    };
+    input.click();
+}
 
-    function editarLibro(id) {
-        const libro = libros.find(l => l.id == id);
-        if (libro) abrirModal(libro);
-        else mostrarToast('Libro no encontrado', 'error');
-    }
-
-    function eliminarLibro(id) {
-        const libro = libros.find(l => l.id == id);
-        const prestamoActivo = getPrestamoActivoPorLibro(id);
-        if (prestamoActivo) { mostrarToast(`❌ No se puede eliminar. El libro está prestado a ${prestamoActivo.socio}.`, 'error'); return; }
-        if (!confirm(`¿Eliminar "${libro?.titulo || id}"?`)) return;
-        libros = libros.filter(l => l.id != id);
-        guardarLibros();
-        renderizarTabla();
-        actualizarEstadisticas();
-        cargarFiltros();
-        mostrarToast('🗑️ Libro eliminado', 'info');
-        if (tokenAcceso) realizarBackup(false);
-    }
-
-    // ============================================================
-    //  CRUD PRÉSTAMOS
-    //  ============================================================
-    function abrirModalPrestamo() {
-        const modal = document.getElementById('modalPrestamo');
-        document.getElementById('modalPrestamoTitulo').textContent = '📋 Nuevo Préstamo';
-        document.getElementById('editPrestamoId').value = '';
-        document.getElementById('prestamoForm').reset();
-        document.getElementById('btnGuardarPrestamo').textContent = '📋 Registrar Préstamo';
-        const select = document.getElementById('prestamoLibro');
-        select.innerHTML = '<option value="">Selecciona un libro...</option>';
-        libros.forEach(libro => { if (getLibroDisponible(libro.id)) { const opt = document.createElement('option'); opt.value = libro.id; opt.textContent = `${libro.id} - ${libro.titulo.substring(0, 60)}${libro.titulo.length > 60 ? '...' : ''}`; select.appendChild(opt); } });
-        document.getElementById('prestamoFecha').value = new Date().toISOString().split('T')[0];
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function abrirModalPrestamoConLibro(libroId) {
-        abrirModalPrestamo();
-        document.getElementById('prestamoLibro').value = libroId;
-    }
-
-    function cerrarModalPrestamo() {
-        document.getElementById('modalPrestamo').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    function guardarPrestamo(e) {
-        e.preventDefault();
-        const libroId = document.getElementById('prestamoLibro').value;
-        const socio = document.getElementById('prestamoSocio').value.trim();
-        const email = document.getElementById('prestamoEmail').value.trim();
-        const telefono = document.getElementById('prestamoTelefono').value.trim();
-        const fechaPrestamo = document.getElementById('prestamoFecha').value;
-        const observaciones = document.getElementById('prestamoObservaciones').value.trim();
-        if (!libroId || !socio || !email || !fechaPrestamo) { mostrarToast('❌ Completa todos los campos obligatorios', 'error'); return; }
-        if (!getLibroDisponible(libroId)) { mostrarToast('❌ El libro no está disponible para préstamo', 'error'); return; }
-        const prestamo = {
-            id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-            libroId, socio, email, telefono: telefono || '',
-            fechaPrestamo, fechaDevolucion: '', estado: 'activo',
-            observaciones: observaciones || '', createdAt: new Date().toISOString()
-        };
-        prestamos.push(prestamo);
-        guardarPrestamos();
-        cerrarModalPrestamo();
-        renderizarPrestamos();
-        actualizarEstadisticasPrestamos();
-        actualizarBadges();
-        actualizarAlertas();
-        renderizarTabla();
-        mostrarToast(`✅ Préstamo registrado para "${socio}"`, 'success');
-        if (tokenAcceso) realizarBackup(false);
-    }
-
-    // ============================================================
-    //  RENDERIZAR TABLA DE PRÉSTAMOS (CON BOTÓN DE EDITAR EMAIL)
-    //  ============================================================
-    function renderizarPrestamos() {
-        const busqueda = document.getElementById('searchPrestamos').value.toLowerCase().trim();
-        const estadoFiltro = document.getElementById('filtroEstadoPrestamo').value;
-        let filtrados = prestamos;
-        if (busqueda) { filtrados = filtrados.filter(p => { const libro = getLibroById(p.libroId); return p.socio.toLowerCase().includes(busqueda) || p.email.toLowerCase().includes(busqueda) || (libro && libro.titulo.toLowerCase().includes(busqueda)); }); }
-        if (estadoFiltro) { filtrados = filtrados.filter(p => p.estado === estadoFiltro); }
-        filtrados.sort((a, b) => new Date(b.fechaPrestamo) - new Date(a.fechaPrestamo));
-        const total = filtrados.length;
-        const totalPaginas = Math.ceil(total / POR_PAGINA);
-        if (paginaPrestamos > totalPaginas && totalPaginas > 0) paginaPrestamos = totalPaginas;
-        if (paginaPrestamos < 1) paginaPrestamos = 1;
-        const inicio = (paginaPrestamos - 1) * POR_PAGINA;
-        const fin = Math.min(inicio + POR_PAGINA, total);
-        const pagina = filtrados.slice(inicio, fin);
-        const tbody = document.getElementById('tablaPrestamos');
-        if (total === 0) {
-            tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📋</div><p>No hay préstamos registrados</p><p style="font-size:0.85rem; margin-top:8px;">Registra el primer préstamo con el botón "Nuevo Préstamo"</p></div></td></tr>`;
-        } else {
-            tbody.innerHTML = pagina.map(p => {
-                const libro = getLibroById(p.libroId);
-                const hoy = new Date();
-                const diffDias = Math.floor((hoy - new Date(p.fechaPrestamo)) / (1000*60*60*24));
-                if (p.estado === 'activo' && diffDias > 30) { p.estado = 'retrasado'; const index = prestamos.findIndex(pr => pr.id === p.id); if (index !== -1) prestamos[index].estado = 'retrasado'; guardarPrestamos(); }
-                const estadoBadge = p.estado === 'devuelto' ? 'devuelto' : p.estado === 'retrasado' ? 'retrasado' : 'activo';
-                const estadoTexto = p.estado === 'devuelto' ? '✅ Devuelto' : p.estado === 'retrasado' ? '🔴 Retrasado' : '🟢 Activo';
-                const emailEnviado = emailYaEnviado(p.id, 'manual') || emailYaEnviado(p.id, 'dia30') || emailYaEnviado(p.id, 'dia45') || emailYaEnviado(p.id, 'dia60');
-                const tieneEmail = p.email && p.email.trim() !== '';
-                return `<tr>
-                    <td><strong>${p.id.substring(0, 8)}</strong></td>
-                    <td style="max-width:200px;word-wrap:break-word;">${libro ? escapeHTML(libro.titulo) : '⚠️ Libro eliminado'}</td>
-                    <td>${escapeHTML(p.socio)}</td>
-                    <td style="font-size:0.75rem;">${tieneEmail ? escapeHTML(p.email) : '<span class="badge-sin-email" style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:20px;font-size:0.55rem;font-weight:600;">⚠️ Sin email</span>'}</td>
-                    <td>${p.telefono ? escapeHTML(p.telefono) : '-'}</td>
-                    <td style="font-size:0.75rem;">${new Date(p.fechaPrestamo).toLocaleDateString('es-ES')}</td>
-                    <td style="font-size:0.75rem;">${p.fechaDevolucion ? new Date(p.fechaDevolucion).toLocaleDateString('es-ES') : '-'}</td>
-                    <td><span class="badge-estado ${estadoBadge}">${estadoTexto}</span></td>
-                    <td>${emailEnviado ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:0.55rem;font-weight:600;">📧 Enviado</span>' : '<span style="font-size:0.6rem;color:#718096;">Pendiente</span>'}</td>
-                    <td>
-                        ${p.estado !== 'devuelto' ? `
-                            <button class="btn-accion editar-email" style="background:#fef3c7;color:#92400e;padding:2px 6px;border:none;border-radius:6px;cursor:pointer;font-size:0.6rem;margin:0 2px;" onclick="abrirModalEditarEmail('${p.id}')" title="Editar email del socio">✏️📧</button>
-                            <button class="btn-accion devolver" onclick="devolverPrestamo('${p.id}')" title="Marcar como devuelto">✅</button>
-                            ${tieneEmail ? `<button class="btn-accion email" onclick="enviarEmailManual('${p.id}')" title="Enviar recordatorio">📧</button>` : ''}
-                        ` : ''}
-                        <button class="btn-accion eliminar" onclick="eliminarPrestamo('${p.id}')" title="Eliminar">🗑️</button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
-        document.getElementById('infoPaginacionPrestamos').textContent = `Mostrando ${total > 0 ? inicio+1 : 0} - ${fin} de ${total} préstamos`;
-        const controles = document.getElementById('paginacionControlesPrestamos');
-        if (totalPaginas <= 1) { controles.innerHTML = ''; }
-        else { let html = ''; for (let i = 1; i <= totalPaginas; i++) { html += `<button class="btn ${i === paginaPrestamos ? 'btn-success' : 'btn-outline'}" style="${i === paginaPrestamos ? '' : 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;'}" onclick="irPaginaPrestamos(${i})">${i}</button>`; } controles.innerHTML = html; }
-    }
-
-    function irPaginaPrestamos(pagina) { paginaPrestamos = pagina; renderizarPrestamos(); }
-
-    function limpiarFiltrosPrestamos() {
-        document.getElementById('searchPrestamos').value = '';
-        document.getElementById('filtroEstadoPrestamo').value = '';
-        paginaPrestamos = 1;
-        renderizarPrestamos();
-    }
-
-    function devolverPrestamo(id) {
-        if (!id) { mostrarToast('❌ No se encontró el préstamo', 'error'); return; }
-        const prestamo = prestamos.find(p => p.id == id);
-        if (!prestamo) { mostrarToast('❌ Préstamo no encontrado', 'error'); return; }
-        if (!confirm(`¿Marcar como devuelto el préstamo de "${prestamo.socio}"?`)) return;
-        prestamo.estado = 'devuelto';
-        prestamo.fechaDevolucion = new Date().toISOString().split('T')[0];
-        guardarPrestamos();
-        renderizarPrestamos();
-        actualizarEstadisticasPrestamos();
-        actualizarBadges();
-        actualizarAlertas();
-        renderizarTabla();
-        mostrarToast(`✅ Préstamo devuelto por "${prestamo.socio}"`, 'success');
-        if (tokenAcceso) realizarBackup(false);
-    }
-
-    function eliminarPrestamo(id) {
-        const prestamo = prestamos.find(p => p.id == id);
-        if (!prestamo) return;
-        if (!confirm(`¿Eliminar el préstamo de "${prestamo.socio}"?`)) return;
-        prestamos = prestamos.filter(p => p.id != id);
-        guardarPrestamos();
-        renderizarPrestamos();
-        actualizarEstadisticasPrestamos();
-        actualizarBadges();
-        actualizarAlertas();
-        renderizarTabla();
-        mostrarToast('🗑️ Préstamo eliminado', 'info');
-        if (tokenAcceso) realizarBackup(false);
-    }
-
-    // ============================================================
-    //  VERIFICACIÓN AUTOMÁTICA DE EMAILS
-    //  ============================================================
-    function iniciarVerificacionEmails() {
-        if (intervaloEmails) clearInterval(intervaloEmails);
-        intervaloEmails = setInterval(() => { verificarYEnviarEmailsAutomaticos(); }, 3600000);
-        setTimeout(() => verificarYEnviarEmailsAutomaticos(), 5000);
-    }
-
-    async function verificarYEnviarEmailsAutomaticos() {
-        const hoy = new Date();
-        for (const prestamo of prestamos) {
-            if (prestamo.estado === 'devuelto') continue;
-            if (!prestamo.email || prestamo.email.trim() === '') continue;
-            const diffDias = Math.floor((hoy - new Date(prestamo.fechaPrestamo)) / (1000*60*60*24));
-            if (diffDias === 30 && !emailYaEnviado(prestamo.id, 'dia30')) { await enviarEmailRecordatorio(prestamo.id, 'dia30'); registrarEmailEnviado(prestamo.id, 'dia30'); }
-            if (diffDias === 45 && !emailYaEnviado(prestamo.id, 'dia45')) { await enviarEmailRecordatorio(prestamo.id, 'dia45'); registrarEmailEnviado(prestamo.id, 'dia45'); }
-            if (diffDias === 60 && !emailYaEnviado(prestamo.id, 'dia60')) { await enviarEmailRecordatorio(prestamo.id, 'dia60'); registrarEmailEnviado(prestamo.id, 'dia60'); }
-            if (diffDias > 60 && diffDias % 15 === 0) { const tipo = `dia${diffDias}`; if (!emailYaEnviado(prestamo.id, tipo)) { await enviarEmailRecordatorio(prestamo.id, tipo); registrarEmailEnviado(prestamo.id, tipo); } }
-        }
-    }
-
-    // ============================================================
-    //  GOOGLE DRIVE - BACKUP
-    //  ============================================================
-    function autenticarGoogle() {
-        return new Promise((resolve, reject) => {
-            if (!gapiInicializado) { reject('Google API no inicializada'); return; }
-            const auth = gapi.auth2.getAuthInstance();
-            if (auth.isSignedIn.get()) { tokenAcceso = auth.currentUser.get().getAuthResponse().access_token; resolve(tokenAcceso); }
-            else { auth.signIn().then(() => { tokenAcceso = auth.currentUser.get().getAuthResponse().access_token; resolve(tokenAcceso); }).catch(err => reject(err)); }
-        });
-    }
-
-    function actualizarIndicadorBackup() {
-        const fecha = localStorage.getItem(BACKUP_KEY);
-        const elemento = document.getElementById('ultimaCopiaTexto');
-        const estado = document.getElementById('estadoBackup');
-        if (fecha) {
-            try { const d = new Date(fecha); elemento.textContent = d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); estado.className = 'estado'; }
-            catch(e) { elemento.textContent = '--:--'; estado.className = 'estado error'; }
-        } else { elemento.textContent = 'Sin copia'; estado.className = 'estado error'; }
-    }
-
-    function guardarFechaBackup() { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); actualizarIndicadorBackup(); }
-
-    async function backupManual() {
-        guardarFechaBackup();
-        mostrarToast('💾 Copia local guardada', 'success');
-        if (!gapiInicializado) { mostrarToast('⚠️ Google Drive no disponible. Solo copia local.', 'warning'); return; }
-        try { await autenticarGoogle(); await realizarBackup(true); }
-        catch (error) { console.error(error); mostrarToast('⚠️ No se pudo conectar con Google Drive. Solo copia local.', 'warning'); }
-    }
-
-    async function realizarBackup(mostrarNotificacion = false) {
-        guardarFechaBackup();
-        if (!gapiInicializado || !tokenAcceso) return;
-        try {
-            const data = JSON.stringify({ libros, prestamos, emailsEnviados }, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
-            const fecha = new Date().toISOString().replace(/[:.]/g, '-');
-            const nombreArchivo = `backup_${fecha}.json`;
-            const carpetaId = await buscarOCrearCarpeta();
-            const metadata = { name: nombreArchivo, parents: [carpetaId], mimeType: 'application/json' };
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            form.append('file', blob);
-            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST', headers: { 'Authorization': `Bearer ${tokenAcceso}` }, body: form
-            });
-            const result = await response.json();
-            if (result.id && mostrarNotificacion) { mostrarToast('☁️ Backup guardado en Google Drive', 'success'); }
-        } catch (error) { console.error(error); if (mostrarNotificacion) mostrarToast('⚠️ Error al guardar en Google Drive', 'error'); }
-    }
-
-    async function buscarOCrearCarpeta() {
-        const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`, { headers: { 'Authorization': `Bearer ${tokenAcceso}` } });
-        const data = await response.json();
-        if (data.files && data.files.length > 0) return data.files[0].id;
-        else {
-            const metadata = { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' };
-            const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-                method: 'POST', headers: { 'Authorization': `Bearer ${tokenAcceso}`, 'Content-Type': 'application/json' }, body: JSON.stringify(metadata)
-            });
-            const result = await createResponse.json();
-            if (result.id) return result.id;
-            else throw new Error('Error al crear carpeta');
-        }
-    }
-
-    function iniciarBackupAutomatico() {
-        if (intervaloBackup) clearInterval(intervaloBackup);
-        intervaloBackup = setInterval(() => { if (tokenAcceso) realizarBackup(false); }, 5 * 60 * 1000);
-    }
-
-    // ============================================================
-    //  PESTAÑAS
-    //  ============================================================
-    function cambiarPestana(pestana) {
-        pestanaActual = pestana;
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`tab${pestana.charAt(0).toUpperCase() + pestana.slice(1)}`).classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.getElementById(`tab${pestana.charAt(0).toUpperCase() + pestana.slice(1)}`).classList.add('active');
-        if (pestana === 'prestamos') { renderizarPrestamos(); actualizarEstadisticasPrestamos(); }
-        else if (pestana === 'alertas') { actualizarAlertas(); }
-    }
-
-    // ============================================================
-    //  EXPORTAR E IMPORTAR
-    //  ============================================================
-    function exportarExcel() {
-        try {
-            const data = libros.map(l => ({ 'Nº Inventario': l.id, 'Número': l.numero || '', 'Título': l.titulo, 'Autor': l.autor || '', 'Editorial': l.editorial || '', 'Ciudad': l.ciudad || '', 'Año': l.anio || '', 'Idioma': l.idioma || '', 'Materia CDU': l.materia || '', 'Ubicación': l.ubicacion || '', 'Sección': l.seccion || '', 'Procedencia': l.procedencia || '' }));
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(data);
-            ws['!cols'] = [{ wch: 15 }, { wch: 12 }, { wch: 50 }, { wch: 30 }, { wch: 30 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 30 }];
-            XLSX.utils.book_append_sheet(wb, ws, 'Libros');
-            const prestamosData = prestamos.map(p => {
-                const libro = getLibroById(p.libroId);
-                return { 'ID': p.id, 'Libro': libro ? libro.titulo : 'Eliminado', 'Socio': p.socio, 'Email': p.email || '', 'Teléfono': p.telefono || '', 'Fecha Préstamo': p.fechaPrestamo, 'Fecha Devolución': p.fechaDevolucion || '', 'Estado': p.estado === 'devuelto' ? 'Devuelto' : p.estado === 'retrasado' ? 'Retrasado' : 'Activo', 'Observaciones': p.observaciones || '' };
-            });
-            const wsPrestamos = XLSX.utils.json_to_sheet(prestamosData);
-            XLSX.utils.book_append_sheet(wb, wsPrestamos, 'Préstamos');
-            XLSX.writeFile(wb, `Biblioteca_Concepcion_${new Date().toISOString().slice(0,10)}.xlsx`);
-            mostrarToast('📊 Excel exportado correctamente', 'success');
-        } catch(e) { mostrarToast('Error al exportar: ' + e.message, 'error'); }
-    }
-
-    function importarDesdeExcel() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.xlsx,.xls';
-        input.onchange = function(e) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(loadEvent) {
-                try {
-                    const data = new Uint8Array(loadEvent.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(sheet);
-                    const nuevosLibros = json.map(row => ({
-                        id: row['Nº Inventario'] || row['Nº'] || row['N°'] || Date.now() + Math.random() * 1000,
-                        numero: row['Número'] || '',
-                        titulo: row['TÍTULO'] || row['Título'] || '',
-                        autor: row['AUTOR'] || row['Autor'] || '',
-                        editorial: row['EDITORIAL'] || row['Editorial'] || '',
-                        ciudad: row['CIUDAD'] || row['Ciudad'] || '',
-                        anio: row['AÑO'] || row['Año'] || '',
-                        idioma: row['IDIOMA (est.)'] || row['Idioma'] || 'Español',
-                        procedencia: row['Procedencia'] || 'Legado José Antonio del Cañizo',
-                        materia: row['MATERIA CDU'] || row['Materia CDU'] || '',
-                        ubicacion: row['UBICACIÓN'] || row['Ubicación'] || '',
-                        seccion: row['SECCIÓN'] || row['Sección'] || 'Sección Adultos'
-                    })).filter(l => l.titulo);
-                    if (nuevosLibros.length > 0) {
-                        libros = nuevosLibros;
-                        guardarLibros();
-                        renderizarTabla();
-                        actualizarEstadisticas();
-                        cargarFiltros();
-                        mostrarToast(`✅ Importados ${nuevosLibros.length} libros desde Excel`, 'success');
-                        if (tokenAcceso) realizarBackup(false);
-                    }
-                } catch(err) { mostrarToast('❌ Error al importar: ' + err.message, 'error'); }
-            };
-            reader.readAsArrayBuffer(file);
-        };
-        input.click();
-    }
-
-    // ============================================================
-    //  UTILIDADES
-    //  ============================================================
-    function getIdiomaClase(idioma) {
-        const map = { 'Español': 'es', 'Inglés': 'en', 'Francés': 'fr', 'Italiano': 'it', 'Catalán': 'ca', 'Portugués': 'pt' };
-        return map[idioma] || 'es';
-    }
-
-    function getProcedenciaClase(procedencia) {
-        if (!procedencia) return '';
-        if (procedencia.includes('Cañizo')) return 'canizo';
-        if (procedencia.includes('Patronato')) return 'patronato';
-        if (procedencia.includes('Amigos')) return 'amigos';
-        return '';
-    }
-
-    function escapeHTML(str) {
-        if (!str) return '';
-        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-        return str.replace(/[&<>"']/g, m => map[m]);
-    }
-
-    function mostrarToast(mensaje, tipo = 'info') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${tipo}`;
-        toast.textContent = mensaje;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100px)';
-            toast.style.transition = 'all 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }, 4000);
-    }
+console.log('✅ App cargada - Versión con botón ✏️📧 para editar email');
 </script>
 </body>
 </html>
