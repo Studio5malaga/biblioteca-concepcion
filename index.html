@@ -17,7 +17,7 @@
     
     <style>
         /* ============================================
-                   ESTILOS COMPLETOS
+                   ESTILOS COMPLETOS (Mismos que antes)
                    ============================================ */
         * {
             margin: 0;
@@ -593,6 +593,16 @@
             50% { transform: scale(1.05); }
         }
 
+        .badge-email-enviado {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.55rem;
+            font-weight: 600;
+            background: #fef3c7;
+            color: #92400e;
+        }
+
         .btn-accion {
             padding: 2px 6px;
             border: none;
@@ -610,6 +620,7 @@
         .btn-accion.devolver:hover { background: #a7f3d0; }
         .btn-accion.email { background: #e0f2fe; color: #0369a1; }
         .btn-accion.email:hover { background: #bae6fd; }
+        .btn-accion.email-enviado { background: #fef3c7; color: #92400e; cursor: default; }
         .btn-accion.prestar { background: #fef3c7; color: #92400e; }
         .btn-accion.prestar:hover { background: #fde68a; }
 
@@ -1090,6 +1101,7 @@ CONTENIDO PRINCIPAL
                         <th>Fecha Préstamo</th>
                         <th>Fecha Devolución</th>
                         <th>Estado</th>
+                        <th>Email</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -1333,19 +1345,22 @@ TOAST
 
     // ============================================================
     //  ESTADO GLOBAL
-    // ============================================================
+    //  ============================================================
     const STORAGE_KEY = 'biblioteca_concepcion_libros';
     const PRESTAMOS_KEY = 'biblioteca_concepcion_prestamos';
     const BACKUP_KEY = 'biblioteca_concepcion_ultimo_backup';
+    const EMAILS_ENVIADOS_KEY = 'biblioteca_concepcion_emails_enviados';
 
     let libros = [];
     let prestamos = [];
+    let emailsEnviados = [];
     let paginaActual = 1;
     let paginaPrestamos = 1;
     const POR_PAGINA = 15;
     let pestanaActual = 'libros';
     let intervaloBackup = null;
     let intervaloAlertas = null;
+    let intervaloEmails = null;
     let gapiInicializado = false;
     let tokenAcceso = null;
 
@@ -1362,7 +1377,6 @@ TOAST
         }
     });
 
-    // Inicializar Google Drive API
     iniciarGapi();
 
     // ============================================================
@@ -1397,6 +1411,7 @@ TOAST
         document.getElementById('mainContent').style.display = 'flex';
         cargarLibros();
         cargarPrestamos();
+        cargarEmailsEnviados();
         renderizarTabla();
         renderizarPrestamos();
         actualizarEstadisticas();
@@ -1407,6 +1422,7 @@ TOAST
         actualizarBadges();
         iniciarBackupAutomatico();
         iniciarAlertasAutomaticas();
+        iniciarVerificacionEmails();
     }
 
     // ============================================================
@@ -1525,6 +1541,177 @@ TOAST
     }
 
     // ============================================================
+    //  GESTIÓN DE EMAILS ENVIADOS
+    // ============================================================
+
+    function cargarEmailsEnviados() {
+        const data = localStorage.getItem(EMAILS_ENVIADOS_KEY);
+        if (data) {
+            try {
+                emailsEnviados = JSON.parse(data);
+                if (!Array.isArray(emailsEnviados)) emailsEnviados = [];
+            } catch(e) { emailsEnviados = []; }
+        } else {
+            emailsEnviados = [];
+        }
+        return emailsEnviados;
+    }
+
+    function guardarEmailsEnviados() {
+        localStorage.setItem(EMAILS_ENVIADOS_KEY, JSON.stringify(emailsEnviados));
+    }
+
+    function emailYaEnviado(prestamoId, tipo) {
+        return emailsEnviados.some(e => e.prestamoId === prestamoId && e.tipo === tipo);
+    }
+
+    function registrarEmailEnviado(prestamoId, tipo) {
+        emailsEnviados.push({
+            prestamoId: prestamoId,
+            tipo: tipo,
+            fecha: new Date().toISOString()
+        });
+        guardarEmailsEnviados();
+    }
+
+    // ============================================================
+    //  VERIFICACIÓN AUTOMÁTICA DE EMAILS
+    // ============================================================
+
+    function iniciarVerificacionEmails() {
+        if (intervaloEmails) clearInterval(intervaloEmails);
+        // Verificar cada 6 horas (21600000 ms) - o cada 1 hora para pruebas
+        intervaloEmails = setInterval(() => {
+            verificarYEnviarEmailsAutomaticos();
+        }, 3600000); // 1 hora para pruebas (cambiar a 21600000 para producción)
+        
+        // También ejecutar al cargar
+        setTimeout(() => verificarYEnviarEmailsAutomaticos(), 5000);
+    }
+
+    async function verificarYEnviarEmailsAutomaticos() {
+        console.log('🔍 Verificando préstamos para emails automáticos...');
+        const hoy = new Date();
+        let emailsEnviadosHoy = 0;
+
+        for (const prestamo of prestamos) {
+            if (prestamo.estado === 'devuelto') continue;
+            
+            const fechaPrestamo = new Date(prestamo.fechaPrestamo);
+            const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
+            
+            // Día 30: primer aviso
+            if (diffDias === 30 && !emailYaEnviado(prestamo.id, 'dia30')) {
+                await enviarEmailRecordatorio(prestamo.id, 'dia30');
+                registrarEmailEnviado(prestamo.id, 'dia30');
+                emailsEnviadosHoy++;
+                mostrarToast(`📧 Email automático (día 30) enviado a ${prestamo.socio}`, 'info');
+            }
+            
+            // Día 45: segundo aviso
+            if (diffDias === 45 && !emailYaEnviado(prestamo.id, 'dia45')) {
+                await enviarEmailRecordatorio(prestamo.id, 'dia45');
+                registrarEmailEnviado(prestamo.id, 'dia45');
+                emailsEnviadosHoy++;
+                mostrarToast(`📧 Email automático (día 45) enviado a ${prestamo.socio}`, 'info');
+            }
+            
+            // Día 60: tercer aviso
+            if (diffDias === 60 && !emailYaEnviado(prestamo.id, 'dia60')) {
+                await enviarEmailRecordatorio(prestamo.id, 'dia60');
+                registrarEmailEnviado(prestamo.id, 'dia60');
+                emailsEnviadosHoy++;
+                mostrarToast(`📧 Email automático (día 60) enviado a ${prestamo.socio}`, 'info');
+            }
+            
+            // Cada 15 días después del día 60
+            if (diffDias > 60 && diffDias % 15 === 0) {
+                const tipo = `dia${diffDias}`;
+                if (!emailYaEnviado(prestamo.id, tipo)) {
+                    await enviarEmailRecordatorio(prestamo.id, tipo);
+                    registrarEmailEnviado(prestamo.id, tipo);
+                    emailsEnviadosHoy++;
+                    mostrarToast(`📧 Email automático (día ${diffDias}) enviado a ${prestamo.socio}`, 'info');
+                }
+            }
+        }
+
+        if (emailsEnviadosHoy > 0) {
+            console.log(`✅ ${emailsEnviadosHoy} emails automáticos enviados hoy`);
+        }
+    }
+
+    // ============================================================
+    //  ENVIAR EMAIL DE RECORDATORIO (Mejorado)
+    // ============================================================
+
+    async function enviarEmailRecordatorio(prestamoId, tipo = 'manual') {
+        const prestamo = prestamos.find(p => p.id == prestamoId);
+        if (!prestamo) {
+            console.log('❌ Préstamo no encontrado');
+            return;
+        }
+
+        const libro = getLibroById(prestamo.libroId);
+        const hoy = new Date();
+        const fechaPrestamo = new Date(prestamo.fechaPrestamo);
+        const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
+
+        // Mensaje según el tipo de aviso
+        let mensajePersonalizado = '';
+        let asuntoPersonalizado = '';
+        
+        if (tipo === 'dia30' || tipo === 'manual') {
+            mensajePersonalizado = `Te recordamos que el libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. El plazo de préstamo es de 30 días. Por favor, devuélvelo lo antes posible.`;
+            asuntoPersonalizado = `📚 Recordatorio de préstamo - Día ${diffDias}`;
+        } else if (tipo === 'dia45') {
+            mensajePersonalizado = `El libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. Ya has superado el plazo de 30 días. Te agradecemos que lo devuelvas cuanto antes.`;
+            asuntoPersonalizado = `⚠️ Aviso importante - Préstamo retrasado (${diffDias} días)`;
+        } else if (tipo === 'dia60') {
+            mensajePersonalizado = `El libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. Es necesario que lo devuelvas a la biblioteca. Si tienes algún problema, contacta con nosotros.`;
+            asuntoPersonalizado = `🔴 Urgente - Préstamo muy retrasado (${diffDias} días)`;
+        } else {
+            mensajePersonalizado = `El libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días en préstamo. Por favor, devuélvelo lo antes posible.`;
+            asuntoPersonalizado = `📚 Recordatorio de préstamo - ${diffDias} días`;
+        }
+
+        try {
+            const templateParams = {
+                to_email: prestamo.email,
+                to_name: prestamo.socio,
+                libro_titulo: libro?.titulo || 'Libro desconocido',
+                dias_retraso: diffDias,
+                fecha_prestamo: new Date(prestamo.fechaPrestamo).toLocaleDateString('es-ES'),
+                biblioteca: 'Biblioteca La Concepción',
+                mensaje: mensajePersonalizado,
+                asunto: asuntoPersonalizado
+            };
+
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+            console.log(`✅ Email enviado a ${prestamo.email} (${tipo})`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error al enviar email:', error);
+            return false;
+        }
+    }
+
+    // ============================================================
+    //  FUNCIÓN MANUAL PARA ENVIAR EMAIL (desde la interfaz)
+    // ============================================================
+
+    async function enviarEmailManual(prestamoId) {
+        const success = await enviarEmailRecordatorio(prestamoId, 'manual');
+        if (success) {
+            registrarEmailEnviado(prestamoId, 'manual');
+            mostrarToast(`📧 Email de recordatorio enviado`, 'success');
+            renderizarPrestamos();
+        } else {
+            mostrarToast('❌ Error al enviar el email', 'error');
+        }
+    }
+
+    // ============================================================
     //  GOOGLE DRIVE - BACKUP EN LA NUBE
     // ============================================================
 
@@ -1628,7 +1815,11 @@ TOAST
         }
 
         try {
-            const data = JSON.stringify({ libros, prestamos }, null, 2);
+            const data = JSON.stringify({ 
+                libros, 
+                prestamos,
+                emailsEnviados 
+            }, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const fecha = new Date().toISOString().replace(/[:.]/g, '-');
             const nombreArchivo = `backup_${fecha}.json`;
@@ -1911,10 +2102,11 @@ TOAST
                                     </div>
                                     <div style="font-size:0.8rem;color:#e53e3e;margin-top:2px;">
                                         ⏰ ${a.dias} días de retraso
+                                        ${emailYaEnviado(a.prestamoId, 'manual') ? ' · 📧 Email enviado' : ''}
                                     </div>
                                 </div>
                                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                    <button class="btn btn-sm btn-info" onclick="enviarEmailRecordatorio('${a.prestamoId}')">
+                                    <button class="btn btn-sm btn-info" onclick="enviarEmailManual('${a.prestamoId}')">
                                         📧 Email
                                     </button>
                                     <button class="btn btn-sm btn-success" onclick="devolverPrestamo('${a.prestamoId}')">
@@ -1934,41 +2126,6 @@ TOAST
         intervaloAlertas = setInterval(() => {
             actualizarAlertas();
         }, 60000);
-    }
-
-    // ============================================================
-    //  ENVIAR EMAIL DE RECORDATORIO
-    // ============================================================
-
-    async function enviarEmailRecordatorio(prestamoId) {
-        const prestamo = prestamos.find(p => p.id == prestamoId);
-        if (!prestamo) {
-            mostrarToast('❌ Préstamo no encontrado', 'error');
-            return;
-        }
-
-        const libro = getLibroById(prestamo.libroId);
-        const hoy = new Date();
-        const fechaPrestamo = new Date(prestamo.fechaPrestamo);
-        const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
-
-        try {
-            const templateParams = {
-                to_email: prestamo.email,
-                to_name: prestamo.socio,
-                libro_titulo: libro?.titulo || 'Libro desconocido',
-                dias_retraso: diffDias,
-                fecha_prestamo: new Date(prestamo.fechaPrestamo).toLocaleDateString('es-ES'),
-                biblioteca: 'Biblioteca La Concepción',
-                mensaje: `Te recordamos que el libro "${libro?.titulo || 'Libro desconocido'}" lleva ${diffDias} días de retraso. Por favor, devuélvelo lo antes posible.`
-            };
-
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-            mostrarToast(`📧 Email de recordatorio enviado a ${prestamo.email}`, 'success');
-        } catch (error) {
-            console.error('Error al enviar email:', error);
-            mostrarToast('❌ Error al enviar el email: ' + error.message, 'error');
-        }
     }
 
     // ============================================================
@@ -2422,7 +2579,7 @@ TOAST
         if (totalFiltrados === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9">
+                    <td colspan="10">
                         <div class="empty-state">
                             <div class="icon">📋</div>
                             <p>No hay préstamos registrados</p>
@@ -2438,7 +2595,6 @@ TOAST
                 const fechaPrestamo = new Date(p.fechaPrestamo);
                 const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
                 
-                // Actualizar estado automáticamente
                 if (p.estado === 'activo' && diffDias > 30) {
                     p.estado = 'retrasado';
                     const index = prestamos.findIndex(pr => pr.id === p.id);
@@ -2451,6 +2607,12 @@ TOAST
                 const estadoTexto = p.estado === 'devuelto' ? '✅ Devuelto' :
                                    p.estado === 'retrasado' ? '🔴 Retrasado' : '🟢 Activo';
 
+                // Verificar si se ha enviado email
+                const emailEnviado = emailYaEnviado(p.id, 'manual') || 
+                                    emailYaEnviado(p.id, 'dia30') ||
+                                    emailYaEnviado(p.id, 'dia45') ||
+                                    emailYaEnviado(p.id, 'dia60');
+
                 return `
                 <tr>
                     <td><strong>${p.id.substring(0, 8)}</strong></td>
@@ -2462,9 +2624,15 @@ TOAST
                     <td style="font-size:0.75rem;">${p.fechaDevolucion ? new Date(p.fechaDevolucion).toLocaleDateString('es-ES') : '-'}</td>
                     <td><span class="badge-estado ${estadoBadge}">${estadoTexto}</span></td>
                     <td>
+                        ${emailEnviado ? 
+                            `<span class="badge-email-enviado">📧 Enviado</span>` : 
+                            `<span style="font-size:0.6rem;color:#718096;">Pendiente</span>`
+                        }
+                    </td>
+                    <td>
                         ${p.estado !== 'devuelto' ? `
                             <button class="btn-accion devolver" onclick="devolverPrestamo('${p.id}')" title="Marcar como devuelto">✅</button>
-                            <button class="btn-accion email" onclick="enviarEmailRecordatorio('${p.id}')" title="Enviar recordatorio">📧</button>
+                            <button class="btn-accion email" onclick="enviarEmailManual('${p.id}')" title="Enviar recordatorio">📧</button>
                         ` : ''}
                         <button class="btn-accion eliminar" onclick="eliminarPrestamo('${p.id}')" title="Eliminar">🗑️</button>
                     </td>
