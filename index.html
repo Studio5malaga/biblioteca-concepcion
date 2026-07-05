@@ -1332,13 +1332,11 @@ TOAST
     const EMAILJS_PUBLIC_KEY = 'gcPOJFiRNxa4VeKGo';
     const EMAILJS_SERVICE_ID = 'service_fyugdmi';
     const EMAILJS_TEMPLATE_ID = 'template_55bjozo';
-
-    // ============================================================
-    //  ✅ EMAIL DEL REMITENTE - YA CONFIGURADO
-    //  ============================================================
     const EMAIL_REMITENTE = 'bibliotecajbhmalaga@gmail.com';
 
+    // Inicializar EmailJS
     emailjs.init(EMAILJS_PUBLIC_KEY);
+    console.log('📧 EmailJS inicializado con Public Key:', EMAILJS_PUBLIC_KEY);
 
     // ============================================================
     //  CONFIGURACIÓN DE GOOGLE DRIVE
@@ -1580,76 +1578,22 @@ TOAST
     }
 
     // ============================================================
-    //  VERIFICACIÓN AUTOMÁTICA DE EMAILS
-    // ============================================================
-
-    function iniciarVerificacionEmails() {
-        if (intervaloEmails) clearInterval(intervaloEmails);
-        intervaloEmails = setInterval(() => {
-            verificarYEnviarEmailsAutomaticos();
-        }, 3600000); // 1 hora
-        
-        setTimeout(() => verificarYEnviarEmailsAutomaticos(), 5000);
-    }
-
-    async function verificarYEnviarEmailsAutomaticos() {
-        console.log('🔍 Verificando préstamos para emails automáticos...');
-        const hoy = new Date();
-        let emailsEnviadosHoy = 0;
-
-        for (const prestamo of prestamos) {
-            if (prestamo.estado === 'devuelto') continue;
-            
-            const fechaPrestamo = new Date(prestamo.fechaPrestamo);
-            const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
-            
-            if (diffDias === 30 && !emailYaEnviado(prestamo.id, 'dia30')) {
-                await enviarEmailRecordatorio(prestamo.id, 'dia30');
-                registrarEmailEnviado(prestamo.id, 'dia30');
-                emailsEnviadosHoy++;
-                mostrarToast(`📧 Email automático (día 30) enviado a ${prestamo.socio}`, 'info');
-            }
-            
-            if (diffDias === 45 && !emailYaEnviado(prestamo.id, 'dia45')) {
-                await enviarEmailRecordatorio(prestamo.id, 'dia45');
-                registrarEmailEnviado(prestamo.id, 'dia45');
-                emailsEnviadosHoy++;
-                mostrarToast(`📧 Email automático (día 45) enviado a ${prestamo.socio}`, 'info');
-            }
-            
-            if (diffDias === 60 && !emailYaEnviado(prestamo.id, 'dia60')) {
-                await enviarEmailRecordatorio(prestamo.id, 'dia60');
-                registrarEmailEnviado(prestamo.id, 'dia60');
-                emailsEnviadosHoy++;
-                mostrarToast(`📧 Email automático (día 60) enviado a ${prestamo.socio}`, 'info');
-            }
-            
-            if (diffDias > 60 && diffDias % 15 === 0) {
-                const tipo = `dia${diffDias}`;
-                if (!emailYaEnviado(prestamo.id, tipo)) {
-                    await enviarEmailRecordatorio(prestamo.id, tipo);
-                    registrarEmailEnviado(prestamo.id, tipo);
-                    emailsEnviadosHoy++;
-                    mostrarToast(`📧 Email automático (día ${diffDias}) enviado a ${prestamo.socio}`, 'info');
-                }
-            }
-        }
-
-        if (emailsEnviadosHoy > 0) {
-            console.log(`✅ ${emailsEnviadosHoy} emails automáticos enviados hoy`);
-        }
-    }
-
-    // ============================================================
-    //  ENVIAR EMAIL DE RECORDATORIO (CON REMITENTE CONFIGURADO)
+    //  ⭐ FUNCIÓN DE ENVÍO DE EMAIL CON DEPURACIÓN MEJORADA
     // ============================================================
 
     async function enviarEmailRecordatorio(prestamoId, tipo = 'manual') {
+        console.log('📧 Iniciando envío de email...');
+        console.log('📧 Préstamo ID:', prestamoId);
+        console.log('📧 Tipo:', tipo);
+        
         const prestamo = prestamos.find(p => p.id == prestamoId);
         if (!prestamo) {
             console.log('❌ Préstamo no encontrado');
+            mostrarToast('❌ Préstamo no encontrado', 'error');
             return false;
         }
+
+        console.log('📧 Socio:', prestamo.socio, 'Email:', prestamo.email);
 
         const libro = getLibroById(prestamo.libroId);
         const hoy = new Date();
@@ -1673,26 +1617,91 @@ TOAST
             asuntoPersonalizado = `📚 Recordatorio de préstamo - ${diffDias} días`;
         }
 
-        try {
-            const templateParams = {
-                to_email: prestamo.email,
-                to_name: prestamo.socio,
-                libro_titulo: libro?.titulo || 'Libro desconocido',
-                dias_retraso: diffDias,
-                fecha_prestamo: new Date(prestamo.fechaPrestamo).toLocaleDateString('es-ES'),
-                biblioteca: 'Biblioteca La Concepción',
-                mensaje: mensajePersonalizado,
-                asunto: asuntoPersonalizado,
-                // ✅ REMITENTE CONFIGURADO
-                from_email: EMAIL_REMITENTE
-            };
+        const templateParams = {
+            to_email: prestamo.email,
+            to_name: prestamo.socio,
+            libro_titulo: libro?.titulo || 'Libro desconocido',
+            dias_retraso: diffDias,
+            fecha_prestamo: new Date(prestamo.fechaPrestamo).toLocaleDateString('es-ES'),
+            biblioteca: 'Biblioteca La Concepción',
+            mensaje: mensajePersonalizado,
+            asunto: asuntoPersonalizado,
+            from_email: EMAIL_REMITENTE
+        };
 
+        console.log('📧 Template params:', templateParams);
+        console.log('📧 Enviando a EmailJS...');
+
+        try {
             const result = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-            console.log(`✅ Email enviado a ${prestamo.email} (${tipo})`, result);
+            console.log('✅ EmailJS respuesta:', result);
+            console.log('✅ Email enviado exitosamente a', prestamo.email);
+            mostrarToast(`📧 Email enviado a ${prestamo.email}`, 'success');
             return true;
         } catch (error) {
-            console.error('❌ Error al enviar email:', error);
+            console.error('❌ Error DETALLADO de EmailJS:', error);
+            console.error('❌ Código de error:', error.text || error.message);
+            console.error('❌ Status:', error.status);
+            
+            let mensajeError = '❌ Error al enviar email: ';
+            if (error.text) {
+                mensajeError += error.text;
+            } else if (error.message) {
+                mensajeError += error.message;
+            } else {
+                mensajeError += 'Error desconocido. Revisa la consola.';
+            }
+            
+            mostrarToast(mensajeError, 'error');
             return false;
+        }
+    }
+
+    // ============================================================
+    //  VERIFICACIÓN AUTOMÁTICA DE EMAILS
+    // ============================================================
+
+    function iniciarVerificacionEmails() {
+        if (intervaloEmails) clearInterval(intervaloEmails);
+        intervaloEmails = setInterval(() => {
+            verificarYEnviarEmailsAutomaticos();
+        }, 3600000);
+        
+        setTimeout(() => verificarYEnviarEmailsAutomaticos(), 5000);
+    }
+
+    async function verificarYEnviarEmailsAutomaticos() {
+        console.log('🔍 Verificando préstamos para emails automáticos...');
+        const hoy = new Date();
+
+        for (const prestamo of prestamos) {
+            if (prestamo.estado === 'devuelto') continue;
+            
+            const fechaPrestamo = new Date(prestamo.fechaPrestamo);
+            const diffDias = Math.floor((hoy - fechaPrestamo) / (1000 * 60 * 60 * 24));
+            
+            if (diffDias === 30 && !emailYaEnviado(prestamo.id, 'dia30')) {
+                await enviarEmailRecordatorio(prestamo.id, 'dia30');
+                registrarEmailEnviado(prestamo.id, 'dia30');
+            }
+            
+            if (diffDias === 45 && !emailYaEnviado(prestamo.id, 'dia45')) {
+                await enviarEmailRecordatorio(prestamo.id, 'dia45');
+                registrarEmailEnviado(prestamo.id, 'dia45');
+            }
+            
+            if (diffDias === 60 && !emailYaEnviado(prestamo.id, 'dia60')) {
+                await enviarEmailRecordatorio(prestamo.id, 'dia60');
+                registrarEmailEnviado(prestamo.id, 'dia60');
+            }
+            
+            if (diffDias > 60 && diffDias % 15 === 0) {
+                const tipo = `dia${diffDias}`;
+                if (!emailYaEnviado(prestamo.id, tipo)) {
+                    await enviarEmailRecordatorio(prestamo.id, tipo);
+                    registrarEmailEnviado(prestamo.id, tipo);
+                }
+            }
         }
     }
 
@@ -1705,15 +1714,19 @@ TOAST
         const success = await enviarEmailRecordatorio(prestamoId, 'manual');
         if (success) {
             registrarEmailEnviado(prestamoId, 'manual');
-            mostrarToast(`📧 Email de recordatorio enviado`, 'success');
             renderizarPrestamos();
-        } else {
-            mostrarToast('❌ Error al enviar el email', 'error');
         }
     }
 
     // ============================================================
-    //  GOOGLE DRIVE - BACKUP EN LA NUBE
+    //  GOOGLE DRIVE - BACKUP EN LA NUBE (RESTO DEL CÓDIGO)
+    //  ============================================================
+    // [El resto del código de Google Drive, gestión de libros, préstamos,
+    //  renderizado de tablas, etc. permanece igual que en la versión anterior]
+    // 
+    // NOTA: Para mantener la respuesta manejable, el resto del código
+    // es idéntico a la versión anterior. La modificación clave está en
+    // la función enviarEmailRecordatorio con la depuración mejorada.
     // ============================================================
 
     function iniciarGapi() {
@@ -2002,7 +2015,12 @@ TOAST
     }
 
     // ============================================================
-    //  GESTIÓN DE PRÉSTAMOS
+    //  GESTIÓN DE PRÉSTAMOS (RESTO DEL CÓDIGO)
+    //  ============================================================
+    // [El resto del código de gestión de préstamos, renderizado de tablas,
+    //  CRUD, exportación, etc. permanece igual]
+    //  Para mantener la respuesta manejable, el resto es idéntico.
+    //  La modificación clave está en enviarEmailRecordatorio con depuración.
     // ============================================================
 
     function cargarPrestamos() {
@@ -2129,10 +2147,6 @@ TOAST
         }, 60000);
     }
 
-    // ============================================================
-    //  ACTUALIZAR BADGES
-    // ============================================================
-
     function actualizarBadges() {
         const activos = prestamos.filter(p => p.estado === 'activo' || p.estado === 'retrasado');
         const badgePrestamos = document.getElementById('prestamosBadge');
@@ -2144,10 +2158,6 @@ TOAST
         }
         actualizarAlertas();
     }
-
-    // ============================================================
-    //  ESTADÍSTICAS
-    // ============================================================
 
     function actualizarEstadisticas() {
         document.getElementById('totalLibros').textContent = libros.length;
